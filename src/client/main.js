@@ -18,58 +18,74 @@ let roomName = 'main-room';
 
 const weapons = {
     1: { name: 'Fist', range: 2.5, damage: 15, cooldown: 400, owned: true },
-    2: { name: 'Knife', range: 3.5, damage: 40, cooldown: 300, owned: false },
-    3: { name: 'Pistol', range: 100, damage: 55, cooldown: 500, owned: false }
+    2: { name: 'Knife', range: 3.5, damage: 45, cooldown: 300, owned: false },
+    3: { name: 'Pistol', range: 100, damage: 60, cooldown: 500, owned: false }
 };
 
 // Scene & Physics
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x020202);
-scene.fog = new THREE.FogExp2(0x020202, 0.03);
+scene.fog = new THREE.FogExp2(0x020202, 0.035);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
 const particles = new ParticleSystem(scene);
 const env = new EnvironmentManager(scene, world);
 
-// UI & Pointer Lock
-const overlay = document.getElementById('overlay');
+// UI Elements
+const mainMenu = document.getElementById('main-menu');
 const hud = document.getElementById('hud');
 const crosshair = document.getElementById('crosshair');
-const playBtn = document.getElementById('play-btn');
 
 const controls = new PointerLockControls(camera, document.body);
 
-playBtn.onclick = () => {
-    isMultiplayer = confirm("Enable Multiplayer? (Cancel for Singleplayer)");
-    if (isMultiplayer) connect(roomName);
-    else {
-        difficulty = prompt("Difficulty: easy, normal, hard", "normal") || "normal";
-        env.generateCity('local-city');
+// Public API for Buttons
+window.startGame = (mode, param) => {
+    isMultiplayer = (mode === 'mp');
+    if (isMultiplayer) {
+        connect(param);
+    } else {
+        difficulty = param;
+        env.generateCity('offline-city');
         startWaveLocal(1);
     }
+    mainMenu.style.opacity = '0';
+    setTimeout(() => { mainMenu.style.display = 'none'; }, 500);
     controls.lock();
 };
 
+window.joinCustomRoom = () => {
+    const room = document.getElementById('room-input').value || 'custom-room';
+    window.startGame('mp', room);
+};
+
+window.switchRoom = () => {
+    const room = document.getElementById('switch-room-id').value;
+    if (room) {
+        connect(room);
+        window.toggleMenu('room-menu');
+        controls.lock();
+    }
+};
+
 controls.addEventListener('lock', () => {
-    overlay.style.display = 'none';
     hud.style.display = 'block';
     crosshair.style.display = 'block';
 });
 
 controls.addEventListener('unlock', () => {
-    // Only show overlay if menus are not active
     const shopActive = document.getElementById('shop-menu').classList.contains('menu-active');
     const roomActive = document.getElementById('room-menu').classList.contains('menu-active');
-
-    if (!shopActive && !roomActive) {
-        overlay.style.display = 'flex';
-        document.getElementById('status-text').innerText = "PAUSED";
+    if (!shopActive && !roomActive && mainMenu.style.display === 'none') {
+        mainMenu.style.display = 'flex';
+        mainMenu.style.opacity = '1';
+        window.showSubMenu('primary-menu');
     }
 });
 
@@ -86,15 +102,17 @@ function connect(room) {
     env.generateCity(room);
 }
 
-// Rest of the game logic (Lighting, Ground, Player, Combat)
-scene.add(new THREE.AmbientLight(0x202020, 1.5));
-const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+// Lighting & World
+scene.add(new THREE.AmbientLight(0x202020, 1.2));
+const sun = new THREE.DirectionalLight(0xffffff, 0.7);
 sun.position.set(50, 100, 50);
 sun.castShadow = true;
+sun.shadow.camera.left = -100; sun.shadow.camera.right = 100;
+sun.shadow.camera.top = 100; sun.shadow.camera.bottom = -100;
 scene.add(sun);
 
-const groundGeo = new THREE.PlaneGeometry(1000, 1000);
-const groundMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+const groundGeo = new THREE.PlaneGeometry(2000, 2000);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
@@ -109,11 +127,12 @@ world.addBody(playerBody);
 const otherPlayers = new Map();
 const zombies = new Map();
 
+// Viewmodel
 const viewmodel = new THREE.Group();
 camera.add(viewmodel);
 scene.add(camera);
-const weaponMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.5), new THREE.MeshStandardMaterial({ color: 0x333333 }));
-weaponMesh.position.set(0.35, -0.4, -0.6);
+const weaponMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.6), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+weaponMesh.position.set(0.4, -0.4, -0.6);
 viewmodel.add(weaponMesh);
 
 const raycaster = new THREE.Raycaster();
@@ -128,8 +147,8 @@ function attack() {
     const w = weapons[currentWeapon];
     GSAP.to(viewmodel.position, { z: 0.15, duration: 0.08, yoyo: true, repeat: 1 });
     if (currentWeapon === 3) {
-        const flash = new THREE.PointLight(0xffaa00, 12, 5);
-        flash.position.set(0.35, -0.4, -0.9);
+        const flash = new THREE.PointLight(0xffaa00, 15, 6);
+        flash.position.set(0.4, -0.4, -1.0);
         viewmodel.add(flash);
         setTimeout(() => viewmodel.remove(flash), 50);
     }
@@ -140,7 +159,7 @@ function attack() {
         let obj = intersects[0].object;
         while(obj.parent && !obj.zombieId) obj = obj.parent;
         if (obj.zombieId) {
-            particles.createExplosion(intersects[0].point, 0x660000, 12);
+            particles.createExplosion(intersects[0].point, 0x880000, 15);
             if (isMultiplayer) socket.send(JSON.stringify({ type: 'hitZombie', zombieId: obj.zombieId, damage: w.damage }));
             else damageZombieLocal(obj.zombieId, w.damage);
         }
@@ -148,7 +167,6 @@ function attack() {
     setTimeout(() => canAttack = true, w.cooldown);
 }
 
-// [Socket Handlers and Local AI - Re-implementing with environmental awareness]
 function setupSocket() {
     socket.onmessage = (e) => {
         const data = JSON.parse(e.data);
@@ -170,7 +188,7 @@ function setupSocket() {
             data.zombies.forEach(zData => {
                 const z = zombies.get(zData.id);
                 if (z) {
-                    z.position.lerp(new THREE.Vector3(zData.pos.x, zData.pos.y, zData.pos.z), 0.2);
+                    z.position.lerp(new THREE.Vector3(zData.pos.x, zData.pos.y, zData.pos.z), 0.15);
                     z.lookAt(playerBody.position.x, 0, playerBody.position.z);
                 }
             });
@@ -192,10 +210,10 @@ function setupSocket() {
 function spawnZombieClient(zData) {
     if (zombies.has(zData.id)) return;
     const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x224422 });
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), mat);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x113311 });
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), mat);
     head.position.y = 1.6;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.4), mat);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.3, 0.4), mat);
     body.position.y = 0.8;
     g.add(head, body);
     g.position.copy(zData.pos);
@@ -204,7 +222,6 @@ function spawnZombieClient(zData) {
     zombies.set(zData.id, g);
 }
 
-// Local AI (same as before but simplified for readability)
 function damageZombieLocal(id, dmg) {
     const z = zombies.get(id);
     if (z) {
@@ -214,48 +231,43 @@ function damageZombieLocal(id, dmg) {
 }
 function startWaveLocal(w) {
     wave = w; document.getElementById('wave').innerText = wave;
-    for (let i = 0; i < wave * 5; i++) {
+    for (let i = 0; i < wave * 6; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const dist = 30 + Math.random() * 20;
+        const dist = 40 + Math.random() * 20;
         spawnZombieClient({ id: 'local_'+Math.random(), pos: { x: Math.cos(angle)*dist, y: 0, z: Math.sin(angle)*dist } });
     }
 }
 
-// Shop and Menus
+// Global Shop Purchase
 window.buyItem = (item, cost) => {
     if (myPoints >= cost) {
-        if (item === 'health') { myHP = Math.min(100, myHP + 50); document.getElementById('hp').innerText = myHP; }
-        else { const id = item === 'knife' ? 2 : 3; weapons[id].owned = true; alert(`Bought ${weapons[id].name}!`); }
-        myPoints -= cost; document.getElementById('points').innerText = myPoints;
+        if (item === 'health') {
+            myHP = Math.min(100, myHP + 50);
+            document.getElementById('hp').innerText = Math.floor(myHP);
+            window.showNotification("HP RESTORED");
+        }
+        else {
+            const id = item === 'knife' ? 2 : 3;
+            weapons[id].owned = true;
+            window.showNotification(weapons[id].name.toUpperCase() + " PURCHASED");
+        }
+        myPoints -= cost;
+        document.getElementById('points').innerText = myPoints;
     } else alert("Not enough points!");
 };
 
-document.getElementById('join-room-btn').onclick = () => {
-    const room = document.getElementById('room-id').value || 'main-room';
-    isMultiplayer = true; connect(room);
-    document.getElementById('room-menu').classList.remove('menu-active');
-    controls.lock();
-};
-
-document.getElementById('go-public-btn').onclick = () => {
-    isMultiplayer = true; connect('main-room');
-    document.getElementById('room-menu').classList.remove('menu-active');
-    controls.lock();
-};
-
-// Loop
 const move = { f: 0, b: 0, l: 0, r: 0, s: 1 };
 window.onkeydown = (e) => {
     if (e.code === 'KeyW') move.f = 1;
     if (e.code === 'KeyS') move.b = 1;
     if (e.code === 'KeyA') move.l = 1;
     if (e.code === 'KeyD') move.r = 1;
-    if (e.code === 'ShiftLeft') move.s = 2.2;
+    if (e.code === 'ShiftLeft') move.s = 2.4;
     if (e.code.startsWith('Digit')) {
         const id = parseInt(e.code.slice(-1));
         if (weapons[id]?.owned) { currentWeapon = id; document.getElementById('weapon').innerText = weapons[id].name; }
     }
-    if (e.code === 'Space' && Math.abs(playerBody.velocity.y) < 0.1) playerBody.velocity.y = 5.5;
+    if (e.code === 'Space' && Math.abs(playerBody.velocity.y) < 0.1) playerBody.velocity.y = 5.8;
     if (e.code === 'KeyB') window.toggleMenu('shop-menu');
     if (e.code === 'KeyM') window.toggleMenu('room-menu');
 };
@@ -275,7 +287,7 @@ function loop() {
     particles.update(dt);
 
     if (controls.isLocked && myHP > 0) {
-        const speed = 7 * move.s;
+        const speed = 7.5 * move.s;
         const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
         const rgt = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
         fwd.y = 0; rgt.y = 0; fwd.normalize(); rgt.normalize();
@@ -286,8 +298,8 @@ function loop() {
             playerBody.velocity.x = vel.x;
             playerBody.velocity.z = vel.z;
         } else {
-            playerBody.velocity.x *= 0.85;
-            playerBody.velocity.z *= 0.85;
+            playerBody.velocity.x *= 0.82;
+            playerBody.velocity.z *= 0.82;
         }
 
         if (isMultiplayer && socket) {
@@ -297,12 +309,12 @@ function loop() {
         if (!isMultiplayer) {
             zombies.forEach((zMesh) => {
                 const dist = zMesh.position.distanceTo(playerBody.position);
-                if (dist < 50) {
+                if (dist < 60) {
                     const dir = new THREE.Vector3().subVectors(playerBody.position, zMesh.position).normalize();
-                    zMesh.position.addScaledVector(dir, 0.05);
+                    zMesh.position.addScaledVector(dir, 0.055);
                     zMesh.lookAt(playerBody.position.x, 0, playerBody.position.z);
-                    if (dist < 1.4 && Math.random() < 0.02) {
-                        myHP -= 1; document.getElementById('hp').innerText = Math.max(0, Math.floor(myHP));
+                    if (dist < 1.4 && Math.random() < 0.015) {
+                        myHP -= 0.8; document.getElementById('hp').innerText = Math.max(0, Math.floor(myHP));
                         if (myHP <= 0) { alert("YOU DIED!"); location.reload(); }
                     }
                 }
@@ -313,11 +325,14 @@ function loop() {
     camera.position.copy(playerBody.position);
     camera.position.y += 0.9;
 
+    // Head bob
+    if ((move.f || move.b || move.l || move.r) && controls.isLocked) {
+        camera.position.y += Math.sin(clock.elapsedTime * 12) * 0.06;
+    }
+
     renderer.render(scene, camera);
 }
 
-document.getElementById('status-text').innerText = "SYSTEMS READY";
-document.getElementById('setup-options').style.display = 'block';
 loop();
 
 window.addEventListener('resize', () => {
