@@ -7,7 +7,7 @@ import { ParticleSystem } from './particles.js';
 import { EnvironmentManager } from './environment.js';
 
 // Game State
-let isMultiplayer = true;
+let isMultiplayer = false;
 let difficulty = 'normal';
 let myPoints = 0;
 let myHP = 100;
@@ -24,14 +24,13 @@ const weapons = {
 
 // Scene & Physics
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x020202);
-scene.fog = new THREE.FogExp2(0x020202, 0.035);
+scene.background = new THREE.Color(0x050505);
+scene.fog = new THREE.FogExp2(0x050505, 0.015); // Much thinner fog for visibility
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
@@ -47,12 +46,13 @@ const controls = new PointerLockControls(camera, document.body);
 
 // Public API for Buttons
 window.startGame = (mode, param) => {
+    console.log("Starting game...", mode, param);
     isMultiplayer = (mode === 'mp');
     if (isMultiplayer) {
         connect(param);
     } else {
         difficulty = param;
-        env.generateCity('offline-city');
+        env.generateCity('offline-city-' + Math.random());
         startWaveLocal(1);
     }
     mainMenu.style.opacity = '0';
@@ -103,25 +103,33 @@ function connect(room) {
 }
 
 // Lighting & World
-scene.add(new THREE.AmbientLight(0x202020, 1.2));
-const sun = new THREE.DirectionalLight(0xffffff, 0.7);
-sun.position.set(50, 100, 50);
+scene.add(new THREE.AmbientLight(0x404040, 2)); // Brighter ambient
+const sun = new THREE.DirectionalLight(0xffffff, 1);
+sun.position.set(50, 200, 50);
 sun.castShadow = true;
-sun.shadow.camera.left = -100; sun.shadow.camera.right = 100;
-sun.shadow.camera.top = 100; sun.shadow.camera.bottom = -100;
+sun.shadow.camera.left = -200; sun.shadow.camera.right = 200;
+sun.shadow.camera.top = 200; sun.shadow.camera.bottom = -200;
 scene.add(sun);
 
-const groundGeo = new THREE.PlaneGeometry(2000, 2000);
-const groundMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+const groundGeo = new THREE.PlaneGeometry(5000, 5000);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
+
 const groundBody = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
 groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
 world.addBody(groundBody);
 
-const playerBody = new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.6), position: new CANNON.Vec3(0, 5, 0), fixedRotation: true });
+// Player
+const playerBody = new CANNON.Body({
+    mass: 1,
+    shape: new CANNON.Sphere(0.6),
+    position: new CANNON.Vec3(0, 2, 0),
+    fixedRotation: true,
+    linearDamping: 0.9 // Help with stopping
+});
 world.addBody(playerBody);
 
 const otherPlayers = new Map();
@@ -160,7 +168,7 @@ function attack() {
         while(obj.parent && !obj.zombieId) obj = obj.parent;
         if (obj.zombieId) {
             particles.createExplosion(intersects[0].point, 0x880000, 15);
-            if (isMultiplayer) socket.send(JSON.stringify({ type: 'hitZombie', zombieId: obj.zombieId, damage: w.damage }));
+            if (isMultiplayer && socket) socket.send(JSON.stringify({ type: 'hitZombie', zombieId: obj.zombieId, damage: w.damage }));
             else damageZombieLocal(obj.zombieId, w.damage);
         }
     }
@@ -216,7 +224,7 @@ function spawnZombieClient(zData) {
     const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.3, 0.4), mat);
     body.position.y = 0.8;
     g.add(head, body);
-    g.position.copy(zData.pos);
+    g.position.set(zData.pos.x, zData.pos.y, zData.pos.z);
     g.zombieId = zData.id;
     scene.add(g);
     zombies.set(zData.id, g);
@@ -298,8 +306,8 @@ function loop() {
             playerBody.velocity.x = vel.x;
             playerBody.velocity.z = vel.z;
         } else {
-            playerBody.velocity.x *= 0.82;
-            playerBody.velocity.z *= 0.82;
+            playerBody.velocity.x *= 0.85;
+            playerBody.velocity.z *= 0.85;
         }
 
         if (isMultiplayer && socket) {
@@ -325,14 +333,14 @@ function loop() {
     camera.position.copy(playerBody.position);
     camera.position.y += 0.9;
 
-    // Head bob
     if ((move.f || move.b || move.l || move.r) && controls.isLocked) {
-        camera.position.y += Math.sin(clock.elapsedTime * 12) * 0.06;
+        camera.position.y += Math.sin(clock.elapsedTime * 12) * 0.04;
     }
 
     renderer.render(scene, camera);
 }
 
+console.log("Game script loaded. Waiting for menu interaction.");
 loop();
 
 window.addEventListener('resize', () => {
