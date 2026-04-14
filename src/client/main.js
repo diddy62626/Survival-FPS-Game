@@ -25,7 +25,7 @@ let socket;
 function connect(room = 'main-room') {
     if (socket) socket.close();
     socket = new PartySocket({
-        host: window.location.host.includes('localhost') ? 'localhost:1999' : 'survival-fps-game-server.yourname.partykit.dev',
+        host: window.location.host.includes('localhost') ? 'localhost:1999' : (window.PARTYKIT_HOST || 'survival-fps-game-server.yourname.partykit.dev'),
         room: room,
     });
     setupSocket();
