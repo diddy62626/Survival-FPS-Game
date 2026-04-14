@@ -59,7 +59,6 @@
             letter-spacing: 1px;
         }
 
-        /* Settings Icon */
         #settings-trigger {
             position: absolute;
             top: 20px;
@@ -82,7 +81,6 @@
             transform: rotate(45deg);
         }
 
-        /* Main Menu Styling */
         #main-menu {
             position: absolute;
             top: 0;
@@ -180,11 +178,8 @@
             font-family: 'Roboto', sans-serif;
             outline: none;
         }
-        input[type="text"]:focus, input[type="password"]:focus {
-            border-color: #00ff66;
-        }
 
-        /* ULTIMATE HIGH-QUALITY SLIDER (COMPLETELY NO BLUE) */
+        /* PIXEL-PERFECT ALIGNED SLIDER */
         .setting-row {
             margin: 35px 0;
             text-align: left;
@@ -205,68 +200,68 @@
 
         input[type="range"] {
             -webkit-appearance: none;
+            appearance: none;
             width: 100%;
             background: transparent;
             cursor: pointer;
             outline: none;
-            border: none;
-            accent-color: #00ff66; /* Ensures the browser-native fill is green if any */
+            margin: 0;
+            height: 20px; /* Bounding height */
         }
 
-        /* Webkit (Chrome, Safari, Edge) */
+        /* Webkit Track */
         input[type="range"]::-webkit-slider-runnable-track {
             width: 100%;
-            height: 10px;
-            background: #1a1a1a;
-            border-radius: 5px;
+            height: 6px;
+            background: #222;
+            border-radius: 3px;
             border: 1px solid #333;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 24px;
-            width: 24px;
-            background: #00ff66;
-            border-radius: 50%;
-            border: 4px solid #050505;
-            box-shadow: 0 0 15px rgba(0, 255, 106, 0.4);
-            margin-top: -8px; /* Correct alignment */
-            transition: all 0.2s ease;
-        }
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
-            box-shadow: 0 0 20px rgba(0, 255, 106, 0.7);
         }
 
-        /* Mozilla (Firefox) */
-        input[type="range"]::-moz-range-track {
-            width: 100%;
-            height: 10px;
-            background: #1a1a1a;
-            border-radius: 5px;
-            border: 1px solid #333;
-        }
-        input[type="range"]::-moz-range-thumb {
+        /* Webkit Thumb - Precision centering: (Track 6 / 2) - (Thumb 20 / 2) = -7px */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
             height: 20px;
             width: 20px;
             background: #00ff66;
             border-radius: 50%;
-            border: 4px solid #050505;
-            box-shadow: 0 0 15px rgba(0, 255, 106, 0.4);
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        input[type="range"]::-moz-range-progress {
-            background-color: #00ff66; /* Green instead of blue */
-            height: 10px;
-            border-radius: 5px 0 0 5px;
+            border: 3px solid #050505;
+            box-shadow: 0 0 10px rgba(0, 255, 106, 0.4);
+            margin-top: -7px;
+            transition: all 0.15s ease;
         }
 
-        /* Focus Reset */
-        input[type="range"]:focus {
-            outline: none;
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 255, 106, 0.7);
         }
-        input[type="range"]::-webkit-slider-runnable-track {
-            background: #1a1a1a !important; /* Ensure no focus color change */
+
+        /* Firefox Track */
+        input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 6px;
+            background: #222;
+            border-radius: 3px;
+            border: 1px solid #333;
+        }
+
+        /* Firefox Thumb */
+        input[type="range"]::-moz-range-thumb {
+            height: 18px;
+            width: 18px;
+            background: #00ff66;
+            border-radius: 50%;
+            border: 3px solid #050505;
+            box-shadow: 0 0 10px rgba(0, 255, 106, 0.4);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        /* Remove Firefox Blue Line */
+        input[type="range"]::-moz-range-progress {
+            background-color: #333;
+            height: 6px;
+            border-radius: 3px;
         }
 
         .sub-menu { display: none; width: 100%; }
@@ -296,12 +291,10 @@
 <body>
     <div id="notification" class="notification">ITEM PURCHASED</div>
 
-    <!-- Settings Icon -->
     <div id="settings-trigger" onclick="toggleMenu('settings-menu')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1V15a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
-    <!-- Main Menu -->
     <div id="main-menu">
         <h1>SURVIVAL</h1>
         <div class="menu-panel" id="primary-menu">
@@ -330,7 +323,6 @@
         </div>
     </div>
 
-    <!-- HUD and Overlays -->
     <div id="ui-container">
         <div id="crosshair"></div>
         <div id="hud">
@@ -345,7 +337,6 @@
         </div>
     </div>
 
-    <!-- Settings Menu -->
     <div id="settings-menu">
         <h2 style="font-family: 'Orbitron'; margin-bottom: 20px;">SETTINGS</h2>
         <div class="setting-row">
@@ -365,7 +356,6 @@
         <button class="btn" onclick="toggleMenu('settings-menu')">CLOSE</button>
     </div>
 
-    <!-- Other In-game Menus -->
     <div id="shop-menu">
         <h2 style="font-family: 'Orbitron'; margin-bottom: 20px;">ARSENAL</h2>
         <div id="shop-items">
@@ -410,11 +400,9 @@
         function toggleMenu(id) {
             const el = document.getElementById(id);
             const isOpening = !el.classList.contains('menu-active');
-
             document.getElementById('shop-menu').classList.remove('menu-active');
             document.getElementById('room-menu').classList.remove('menu-active');
             document.getElementById('settings-menu').classList.remove('menu-active');
-
             if (isOpening) {
                 el.classList.add('menu-active');
                 document.exitPointerLock();
