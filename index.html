@@ -59,6 +59,29 @@
             letter-spacing: 1px;
         }
 
+        /* Settings Icon */
+        #settings-trigger {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            pointer-events: auto;
+            cursor: pointer;
+            z-index: 1000;
+            background: rgba(10, 10, 10, 0.8);
+            padding: 10px;
+            border-radius: 50%;
+            border: 1px solid #333;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #settings-trigger:hover {
+            border-color: #00ff66;
+            box-shadow: 0 0 10px rgba(0, 255, 106, 0.3);
+            transform: rotate(45deg);
+        }
+
         /* Main Menu Styling */
         #main-menu {
             position: absolute;
@@ -127,7 +150,7 @@
             font-size: 0.7em;
         }
 
-        #shop-menu, #room-menu {
+        #shop-menu, #room-menu, #settings-menu {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -139,12 +162,13 @@
             display: none;
             pointer-events: auto;
             text-align: center;
-            z-index: 110;
+            z-index: 1100;
+            min-width: 320px;
         }
 
         .menu-active { display: block !important; }
 
-        input {
+        input[type="text"], input[type="password"] {
             padding: 12px;
             border-radius: 2px;
             border: 1px solid #333;
@@ -156,19 +180,32 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        .sub-menu {
-            display: none;
+        /* Slider styling */
+        .setting-row {
+            margin: 25px 0;
+            text-align: left;
+        }
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Orbitron';
+            font-size: 0.8em;
+            margin-bottom: 10px;
+            color: #888;
+        }
+        input[type="range"] {
             width: 100%;
+            cursor: pointer;
+            accent-color: #00ff66;
         }
 
-        .sub-menu.active {
-            display: block;
-        }
+        .sub-menu { display: none; width: 100%; }
+        .sub-menu.active { display: block; }
 
         .notification {
             position: fixed;
             top: 20px;
-            right: 20px;
+            right: 80px;
             background: #00ff66;
             color: #000;
             padding: 15px 25px;
@@ -189,15 +226,18 @@
 <body>
     <div id="notification" class="notification">ITEM PURCHASED</div>
 
+    <!-- Settings Icon -->
+    <div id="settings-trigger" onclick="toggleMenu('settings-menu')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1V15a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </div>
+
     <!-- Main Menu -->
     <div id="main-menu">
         <h1>SURVIVAL</h1>
-
         <div class="menu-panel" id="primary-menu">
             <button class="btn" onclick="showSubMenu('sp-menu')">Singleplayer</button>
             <button class="btn" onclick="showSubMenu('mp-menu')">Multiplayer</button>
         </div>
-
         <div class="menu-panel sub-menu" id="sp-menu">
             <h3 style="font-family: 'Orbitron'; color: #888;">SELECT DIFFICULTY</h3>
             <button class="btn" onclick="startGame('sp', 'easy')">Easy</button>
@@ -205,14 +245,12 @@
             <button class="btn" onclick="startGame('sp', 'hard')">Hard</button>
             <button class="btn" style="border: none; color: #888; font-size: 0.7em;" onclick="showSubMenu('primary-menu')">Back</button>
         </div>
-
         <div class="menu-panel sub-menu" id="mp-menu">
             <h3 style="font-family: 'Orbitron'; color: #888;">MULTIPLAYER</h3>
             <button class="btn" onclick="startGame('mp', 'main-room')">Join Public Room</button>
             <button class="btn" onclick="showSubMenu('custom-room-menu')">Create / Join Room</button>
             <button class="btn" style="border: none; color: #888; font-size: 0.7em;" onclick="showSubMenu('primary-menu')">Back</button>
         </div>
-
         <div class="menu-panel sub-menu" id="custom-room-menu">
             <h3 style="font-family: 'Orbitron'; color: #888;">CUSTOM ROOM</h3>
             <input type="text" id="room-input" placeholder="Room Name">
@@ -237,7 +275,27 @@
         </div>
     </div>
 
-    <!-- In-game Menus -->
+    <!-- Settings Menu -->
+    <div id="settings-menu">
+        <h2 style="font-family: 'Orbitron'; margin-bottom: 20px;">SETTINGS</h2>
+        <div class="setting-row">
+            <div class="setting-label">
+                <span>Field of View</span>
+                <span id="fov-val">75</span>
+            </div>
+            <input type="range" id="fov-slider" min="40" max="120" value="75">
+        </div>
+        <div class="setting-row">
+            <div class="setting-label">
+                <span>Render Distance</span>
+                <span id="dist-val">50</span>
+            </div>
+            <input type="range" id="dist-slider" min="1" max="100" value="50">
+        </div>
+        <button class="btn" onclick="toggleMenu('settings-menu')">CLOSE</button>
+    </div>
+
+    <!-- Other In-game Menus -->
     <div id="shop-menu">
         <h2 style="font-family: 'Orbitron'; margin-bottom: 20px;">ARSENAL</h2>
         <div id="shop-items">
@@ -285,6 +343,7 @@
 
             document.getElementById('shop-menu').classList.remove('menu-active');
             document.getElementById('room-menu').classList.remove('menu-active');
+            document.getElementById('settings-menu').classList.remove('menu-active');
 
             if (isOpening) {
                 el.classList.add('menu-active');
