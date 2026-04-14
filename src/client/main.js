@@ -15,6 +15,7 @@ let currentWeapon = 1;
 let canAttack = true;
 let wave = 1;
 let roomName = 'main-room';
+let isPerformanceMode = false;
 
 const weapons = {
     1: { name: 'Fist', range: 2.5, damage: 15, cooldown: 400, owned: true },
@@ -32,11 +33,37 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
 const particles = new ParticleSystem(scene);
 const env = new EnvironmentManager(scene, world);
+
+// Performance Mode Logic
+window.togglePerformance = () => {
+    isPerformanceMode = !isPerformanceMode;
+    const btn = document.getElementById('perf-toggle');
+    btn.innerText = isPerformanceMode ? 'ON' : 'OFF';
+    btn.classList.toggle('active', isPerformanceMode);
+
+    // Apply changes
+    renderer.shadowMap.enabled = !isPerformanceMode;
+    env.setPerformanceMode(isPerformanceMode);
+
+    if (isPerformanceMode) {
+        scene.fog.density = 0.03;
+        renderer.setPixelRatio(0.8);
+    } else {
+        scene.fog.density = 0.015;
+        renderer.setPixelRatio(window.devicePixelRatio);
+    }
+
+    // Regenerate city if in game
+    if (document.getElementById('main-menu').style.display === 'none') {
+        env.generateCity(isMultiplayer ? roomName : 'offline-city');
+    }
+};
 
 // Settings Handlers
 const fovSlider = document.getElementById('fov-slider');
@@ -54,9 +81,8 @@ fovSlider.oninput = () => {
 distSlider.oninput = () => {
     const val = parseInt(distSlider.value);
     distVal.innerText = val;
-    // Map 1-100 slider to fog density (100 = clear, 1 = thick)
-    const density = 0.1 - (val / 100) * 0.1;
-    fog.density = Math.max(0, density);
+    const density = 0.05 - (val / 100) * 0.05;
+    fog.density = Math.max(0.001, density);
 };
 
 // UI Elements
@@ -71,7 +97,7 @@ window.startGame = (mode, param) => {
     if (isMultiplayer) connect(param);
     else {
         difficulty = param;
-        env.generateCity('offline-city-' + Math.random());
+        env.generateCity('offline-city');
         startWaveLocal(1);
     }
     mainMenu.style.opacity = '0';
@@ -105,7 +131,7 @@ controls.addEventListener('unlock', () => {
     }
 });
 
-// Networking & World Logic (Lighting, Ground, Player, etc)
+// Networking & World Logic
 let socket;
 function connect(room) {
     roomName = room;
@@ -135,7 +161,13 @@ const groundBody = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON
 groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
 world.addBody(groundBody);
 
-const playerBody = new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.6), position: new CANNON.Vec3(0, 2, 0), fixedRotation: true, linearDamping: 0.9 });
+const playerBody = new CANNON.Body({
+    mass: 1,
+    shape: new CANNON.Sphere(0.6),
+    position: new CANNON.Vec3(0, 5, 0),
+    fixedRotation: true,
+    linearDamping: 0.9
+});
 world.addBody(playerBody);
 
 const otherPlayers = new Map();

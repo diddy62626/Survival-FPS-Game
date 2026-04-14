@@ -179,9 +179,8 @@
             outline: none;
         }
 
-        /* PIXEL-PERFECT ALIGNED SLIDER */
         .setting-row {
-            margin: 35px 0;
+            margin: 30px 0;
             text-align: left;
         }
         .setting-label {
@@ -206,62 +205,42 @@
             cursor: pointer;
             outline: none;
             margin: 0;
-            height: 20px; /* Bounding height */
-        }
-
-        /* Webkit Track */
-        input[type="range"]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 6px;
-            background: #222;
-            border-radius: 3px;
-            border: 1px solid #333;
-        }
-
-        /* Webkit Thumb - Precision centering: (Track 6 / 2) - (Thumb 20 / 2) = -7px */
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
             height: 20px;
-            width: 20px;
-            background: #00ff66;
-            border-radius: 50%;
-            border: 3px solid #050505;
-            box-shadow: 0 0 10px rgba(0, 255, 106, 0.4);
-            margin-top: -7px;
-            transition: all 0.15s ease;
         }
 
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(0, 255, 106, 0.7);
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; background: #222; border-radius: 3px; border: 1px solid #333;
         }
-
-        /* Firefox Track */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; background: #00ff66; border-radius: 50%;
+            border: 3px solid #050505; box-shadow: 0 0 10px rgba(0, 255, 106, 0.4); margin-top: -8px;
+            transition: all 0.1s ease;
+        }
         input[type="range"]::-moz-range-track {
-            width: 100%;
-            height: 6px;
-            background: #222;
-            border-radius: 3px;
-            border: 1px solid #333;
+            width: 100%; height: 6px; background: #222; border-radius: 3px; border: 1px solid #333;
         }
-
-        /* Firefox Thumb */
         input[type="range"]::-moz-range-thumb {
-            height: 18px;
-            width: 18px;
-            background: #00ff66;
-            border-radius: 50%;
-            border: 3px solid #050505;
-            box-shadow: 0 0 10px rgba(0, 255, 106, 0.4);
-            cursor: pointer;
-            transition: all 0.15s ease;
+            height: 18px; width: 18px; background: #00ff66; border-radius: 50%; border: 3px solid #050505;
         }
+        input[type="range"]::-moz-range-progress { background-color: #333; height: 6px; border-radius: 3px; }
 
-        /* Remove Firefox Blue Line */
-        input[type="range"]::-moz-range-progress {
-            background-color: #333;
-            height: 6px;
-            border-radius: 3px;
+        /* Performance Mode Button */
+        .toggle-btn {
+            background: #222;
+            color: #888;
+            border: 1px solid #444;
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+            font-family: 'Orbitron';
+            text-transform: uppercase;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+        .toggle-btn.active {
+            background: #00ff66;
+            color: #000;
+            border-color: #00ff66;
         }
 
         .sub-menu { display: none; width: 100%; }
@@ -340,18 +319,16 @@
     <div id="settings-menu">
         <h2 style="font-family: 'Orbitron'; margin-bottom: 20px;">SETTINGS</h2>
         <div class="setting-row">
-            <div class="setting-label">
-                <span>Field of View</span>
-                <span id="fov-val">75</span>
-            </div>
+            <div class="setting-label"><span>Field of View</span><span id="fov-val">75</span></div>
             <input type="range" id="fov-slider" min="40" max="120" value="75">
         </div>
         <div class="setting-row">
-            <div class="setting-label">
-                <span>Render Distance</span>
-                <span id="dist-val">50</span>
-            </div>
+            <div class="setting-label"><span>Render Distance</span><span id="dist-val">50</span></div>
             <input type="range" id="dist-slider" min="1" max="100" value="50">
+        </div>
+        <div class="setting-row">
+            <div class="setting-label"><span>Performance Mode</span></div>
+            <button class="toggle-btn" id="perf-toggle" onclick="togglePerformance()">OFF</button>
         </div>
         <button class="btn" onclick="toggleMenu('settings-menu')">CLOSE</button>
     </div>
@@ -390,29 +367,19 @@
         function showSubMenu(id) {
             document.querySelectorAll('.menu-panel').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            if (id === 'primary-menu') {
-                document.getElementById('primary-menu').style.display = 'block';
-            } else {
-                document.getElementById('primary-menu').style.display = 'none';
-            }
+            document.getElementById('primary-menu').style.display = (id === 'primary-menu') ? 'block' : 'none';
         }
 
         function toggleMenu(id) {
             const el = document.getElementById(id);
             const isOpening = !el.classList.contains('menu-active');
-            document.getElementById('shop-menu').classList.remove('menu-active');
-            document.getElementById('room-menu').classList.remove('menu-active');
-            document.getElementById('settings-menu').classList.remove('menu-active');
-            if (isOpening) {
-                el.classList.add('menu-active');
-                document.exitPointerLock();
-            }
+            document.querySelectorAll('#shop-menu, #room-menu, #settings-menu').forEach(m => m.classList.remove('menu-active'));
+            if (isOpening) { el.classList.add('menu-active'); document.exitPointerLock(); }
         }
 
         function showNotification(text) {
             const n = document.getElementById('notification');
-            n.innerText = text;
-            n.style.display = 'block';
+            n.innerText = text; n.style.display = 'block';
             setTimeout(() => n.style.display = 'none', 3000);
         }
 
