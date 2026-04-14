@@ -10,17 +10,18 @@
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
             border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%);
+            display: none;
         }
-        #hud { position: absolute; bottom: 20px; left: 20px; pointer-events: auto; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; }
+        #hud { position: absolute; bottom: 20px; left: 20px; pointer-events: auto; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; display: none; }
         .hud-item { margin-bottom: 5px; font-size: 1.2em; font-weight: bold; }
-        #loading-screen {
+        #overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(45deg, #1a1a1a, #000); color: white; display: flex; flex-direction: column;
+            background: rgba(0,0,0,0.8); color: white; display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 100;
         }
         .btn {
-            pointer-events: auto; background: #444; color: white; border: none; padding: 10px 20px;
-            cursor: pointer; margin: 5px; border-radius: 5px; font-weight: bold;
+            pointer-events: auto; background: #444; color: white; border: none; padding: 15px 30px;
+            cursor: pointer; margin: 10px; border-radius: 5px; font-weight: bold; font-size: 1.2em;
         }
         .btn:hover { background: #666; }
         #shop-menu, #room-menu {
@@ -30,13 +31,20 @@
         }
         .menu-active { display: block !important; }
         input { padding: 8px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin: 5px; }
+        #instructions { margin-top: 20px; color: #888; text-align: center; line-height: 1.6; }
     </style>
 </head>
 <body>
-    <div id="loading-screen">
+    <div id="overlay">
         <h1 style="font-size: 4em; letter-spacing: 10px; margin-bottom: 0;">SURVIVAL</h1>
-        <p id="loading-text" style="color: #888;">INITIALIZING ENGINE...</p>
-        <button class="btn" id="start-btn" style="display: none;">ENTER BATTLEFIELD</button>
+        <p id="status-text" style="color: #888;">INITIALIZING ENGINE...</p>
+        <div id="setup-options" style="display: none;">
+            <button class="btn" id="play-btn">START GAME</button>
+            <div id="instructions">
+                WASD to Move | Mouse to Look/Attack | Shift to Sprint<br>
+                B for Shop | M for Rooms | 1-3 to Switch Weapons
+            </div>
+        </div>
     </div>
 
     <div id="ui-container">
@@ -47,8 +55,8 @@
             <div class="hud-item">WAVE: <span id="wave">1</span></div>
             <div class="hud-item">WEAPON: <span id="weapon">Fist</span></div>
             <div style="margin-top: 10px;">
-                <button class="btn" onclick="toggleMenu('shop-menu')">SHOP (B)</button>
-                <button class="btn" onclick="toggleMenu('room-menu')">ROOMS (M)</button>
+                <button class="btn" style="font-size: 0.8em; padding: 5px 10px;" onclick="toggleMenu('shop-menu')">SHOP (B)</button>
+                <button class="btn" style="font-size: 0.8em; padding: 5px 10px;" onclick="toggleMenu('room-menu')">ROOMS (M)</button>
             </div>
         </div>
     </div>
@@ -91,8 +99,13 @@
     <script>
         function toggleMenu(id) {
             const el = document.getElementById(id);
-            el.classList.toggle('menu-active');
-            if (el.classList.contains('menu-active')) {
+            const isOpening = !el.classList.contains('menu-active');
+
+            document.getElementById('shop-menu').classList.remove('menu-active');
+            document.getElementById('room-menu').classList.remove('menu-active');
+
+            if (isOpening) {
+                el.classList.add('menu-active');
                 document.exitPointerLock();
             }
         }
