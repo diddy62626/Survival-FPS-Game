@@ -20,6 +20,7 @@ export class EnvironmentManager {
     }
 
     generateCity(seedStr) {
+        console.log("Generating city with guaranteed interiors...");
         // Cleanup
         this.objects.forEach(obj => {
             if (obj.mesh) this.scene.remove(obj.mesh);
@@ -33,26 +34,27 @@ export class EnvironmentManager {
         for(let i=0; i<seedStr.length; i++) seed += seedStr.charCodeAt(i);
 
         const gridSize = this.performanceMode ? 6 : 10;
-        const spacing = 50;
+        const spacing = 60; // Increased spacing for bigger buildings
 
         for (let x = -gridSize; x <= gridSize; x++) {
             for (let z = -gridSize; z <= gridSize; z++) {
-                // Clear spawn area
-                if (Math.abs(x * spacing) < 35 && Math.abs(z * spacing) < 35) continue;
+                // Clear spawn area (25m radius)
+                const distFromOrigin = Math.sqrt(x*x + z*z) * spacing;
+                if (distFromOrigin < 25) continue;
 
                 const r = this.seededRandom(seed + x * 133 + z * 77);
-                if (r < 0.4) {
+                if (r < 0.45) {
                     const buildingType = Math.floor(this.seededRandom(seed + x + z) * 30);
-                    this.createDetailedBuilding(x * spacing, z * spacing, buildingType, r);
+                    this.createLargeBuildingWithInterior(x * spacing, z * spacing, buildingType, r);
                 }
-                else if (r < 0.65 && !this.performanceMode) {
+                else if (r < 0.7 && !this.performanceMode) {
                     this.createFoliage(x * spacing + (r - 0.5) * 20, z * spacing + (this.seededRandom(r) - 0.5) * 20, r);
                 }
             }
         }
     }
 
-    createDetailedBuilding(x, z, type, r) {
+    createLargeBuildingWithInterior(x, z, type, r) {
         const group = new THREE.Group();
         const wallThickness = 0.8;
 
@@ -80,37 +82,39 @@ export class EnvironmentManager {
             }
         };
 
-        const w = 20 + (type % 5) * 4;
-        const d = 20 + (type % 3) * 4;
-        const h = 15 + (type % 6) * 5;
+        // Bigger buildings for easier interior access
+        let w = 25 + (type % 5) * 5;
+        let d = 25 + (type % 3) * 5;
+        let h = 15 + (type % 4) * 8;
 
-        // ACCURATE INTERIOR CONSTRUCTION
-        // 1. Floor (Slightly raised to prevent clipping)
+        // Interior Construction
+        // Floor
         addWall(0, 0.2, 0, w, 0.4, d);
-
-        // 2. Roof
+        // Roof
         addWall(0, h, 0, w, 0.4, d);
 
-        // 3. Exterior Walls
+        // Exterior Walls
         addWall(-w/2, h/2, 0, wallThickness, h, d); // Left
         addWall(w/2, h/2, 0, wallThickness, h, d);  // Right
         addWall(0, h/2, -d/2, w, h, wallThickness); // Back
 
-        // 4. Front Wall with Large Doorway
-        const dw = 5; // Wide door
-        const dh = 8; // Tall door
-        addWall(-(w/4 + dw/4), h/2, d/2, w/2 - dw/2, h, wallThickness); // Left of door
-        addWall(w/4 + dw/4, h/2, d/2, w/2 - dw/2, h, wallThickness);  // Right of door
-        addWall(0, (h + dh)/2, d/2, dw, h - dh, wallThickness);      // Above door
+        // Front Wall with VERY LARGE Entrance
+        const doorWidth = 8;
+        const doorHeight = 10;
+        addWall(-(w/4 + doorWidth/4), h/2, d/2, w/2 - doorWidth/2, h, wallThickness); // Left of door
+        addWall(w/4 + doorWidth/4, h/2, d/2, w/2 - doorWidth/2, h, wallThickness);  // Right of door
+        addWall(0, (h + doorHeight)/2, d/2, doorWidth, h - doorHeight, wallThickness); // Above door
 
-        // 5. Interior Divider (Makes it look like rooms)
+        // Interior Details (Pillars for cover)
         if (!this.performanceMode) {
-            addWall(-w/4, h/2, 0, wallThickness, h, d/2); // Room divider
+            // Pillars
+            addWall(-w/4, h/2, -d/4, 2, h, 2);
+            addWall(w/4, h/2, -d/4, 2, h, 2);
 
-            // Interior Light
-            const light = new THREE.PointLight(0xffaa66, 15, 20);
-            light.position.set(x, h/2 + 2, z);
-            this.scene.add(light);
+            // Interior light to prove it's an interior
+            const light = new THREE.PointLight(0xffccaa, 20, 30);
+            light.position.set(0, h/2, 0);
+            group.add(light);
             this.lights.push(light);
         }
 
@@ -120,12 +124,13 @@ export class EnvironmentManager {
     }
 
     createFoliage(x, z, r) {
+        if (this.performanceMode) return;
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
         const leafMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57 });
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 5), trunkMat);
-        trunk.position.set(x, 2.5, z);
-        const leaves = new THREE.Mesh(new THREE.SphereGeometry(3.5, 8, 8), leafMat);
-        leaves.position.set(x, 7.5, z);
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 6), trunkMat);
+        trunk.position.set(x, 3, z);
+        const leaves = new THREE.Mesh(new THREE.SphereGeometry(4, 12, 12), leafMat);
+        leaves.position.set(x, 9, z);
         this.scene.add(trunk, leaves);
         this.objects.push({ mesh: trunk }, { mesh: leaves });
     }

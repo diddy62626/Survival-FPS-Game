@@ -6,272 +6,58 @@
     <title>Survival FPS Multiplayer</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
-
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: #050505;
-            font-family: 'Roboto', sans-serif;
-            color: #e0e0e0;
-        }
-
-        #ui-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 12px;
-            height: 12px;
-            border: 2px solid rgba(0, 255, 100, 0.7);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            display: none;
-        }
-
-        #hud {
-            position: absolute;
-            bottom: 30px;
-            left: 30px;
-            pointer-events: auto;
-            background: rgba(10, 10, 10, 0.85);
-            padding: 20px;
-            border-radius: 4px;
-            border-left: 4px solid #00ff66;
-            display: none;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-
-        .hud-item {
-            margin-bottom: 8px;
-            font-size: 1.1em;
-            font-weight: 700;
-            font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Roboto', sans-serif; color: #e0e0e0; }
+        #ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; border: 2px solid rgba(0, 255, 100, 0.7); border-radius: 50%; transform: translate(-50%, -50%); display: none; }
+        #hud { position: absolute; bottom: 30px; left: 30px; pointer-events: auto; background: rgba(10, 10, 10, 0.85); padding: 20px; border-radius: 4px; border-left: 4px solid #00ff66; display: none; }
+        .hud-item { margin-bottom: 8px; font-size: 1.1em; font-weight: 700; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1px; }
 
         #settings-trigger {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            pointer-events: auto;
-            cursor: pointer;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.8);
-            padding: 10px;
-            border-radius: 50%;
-            border: 1px solid #333;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: absolute; top: 20px; right: 20px; pointer-events: auto; cursor: pointer; z-index: 1000;
+            background: rgba(10, 10, 10, 0.8); padding: 10px; border-radius: 50%; border: 1px solid #333; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
         }
-        #settings-trigger:hover {
-            border-color: #00ff66;
-            box-shadow: 0 0 10px rgba(0, 255, 106, 0.3);
-            transform: rotate(45deg);
-        }
+        #settings-trigger:hover { border-color: #00ff66; transform: rotate(45deg); }
 
         #main-menu {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100;
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)), url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000') center/cover;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            transition: opacity 0.5s ease;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s;
         }
-
-        .menu-panel {
-            background: rgba(15, 15, 15, 0.95);
-            padding: 40px;
-            border: 1px solid #333;
-            border-top: 5px solid #00ff66;
-            width: 400px;
-            text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 3.5em;
-            margin-bottom: 40px;
-            color: #00ff66;
-            text-shadow: 0 0 15px rgba(0, 255, 106, 0.5);
-            letter-spacing: 5px;
-        }
-
-        .btn {
-            pointer-events: auto;
-            background: transparent;
-            color: #fff;
-            border: 1px solid #444;
-            padding: 12px 24px;
-            cursor: pointer;
-            margin: 10px;
-            border-radius: 2px;
-            font-weight: 700;
-            font-size: 0.9em;
-            font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.2s ease;
-            width: 100%;
-            display: block;
-        }
-
-        .btn:hover {
-            background: #00ff66;
-            color: #000;
-            border-color: #00ff66;
-            box-shadow: 0 0 20px rgba(0, 255, 106, 0.4);
-        }
-
-        .btn-small {
-            width: auto;
-            display: inline-block;
-            padding: 8px 16px;
-            font-size: 0.7em;
-        }
+        .menu-panel { background: rgba(15, 15, 15, 0.95); padding: 40px; border: 1px solid #333; border-top: 5px solid #00ff66; width: 400px; text-align: center; }
+        h1 { font-family: 'Orbitron', sans-serif; font-size: 3.5em; margin-bottom: 40px; color: #00ff66; text-shadow: 0 0 15px rgba(0, 255, 106, 0.5); }
+        .btn { background: transparent; color: #fff; border: 1px solid #444; padding: 12px 24px; cursor: pointer; margin: 10px; font-family: 'Orbitron'; text-transform: uppercase; letter-spacing: 2px; width: 100%; }
+        .btn:hover { background: #00ff66; color: #000; border-color: #00ff66; }
 
         #shop-menu, #room-menu, #settings-menu {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(10, 10, 10, 0.98);
-            padding: 40px;
-            border: 1px solid #333;
-            border-top: 4px solid #00ff66;
-            display: none;
-            pointer-events: auto;
-            text-align: center;
-            z-index: 1100;
-            min-width: 320px;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98); padding: 40px; border: 1px solid #333; border-top: 4px solid #00ff66;
+            display: none; pointer-events: auto; text-align: center; z-index: 1100; min-width: 320px;
         }
-
         .menu-active { display: block !important; }
 
-        input[type="text"], input[type="password"] {
-            padding: 12px;
-            border-radius: 2px;
-            border: 1px solid #333;
-            background: #111;
-            color: #fff;
-            margin: 10px 0;
-            width: 100%;
-            box-sizing: border-box;
-            font-family: 'Roboto', sans-serif;
-            outline: none;
-        }
+        .setting-row { margin: 25px 0; text-align: left; }
+        .setting-label { display: flex; justify-content: space-between; font-family: 'Orbitron'; font-size: 0.85em; margin-bottom: 10px; color: #aaa; }
+        .setting-label span:last-child { color: #00ff66; }
 
-        .setting-row {
-            margin: 30px 0;
-            text-align: left;
-        }
-        .setting-label {
-            display: flex;
-            justify-content: space-between;
-            font-family: 'Orbitron';
-            font-size: 0.85em;
-            margin-bottom: 15px;
-            color: #aaa;
-            letter-spacing: 1px;
-        }
-        .setting-label span:last-child {
-            color: #00ff66;
-            font-weight: bold;
-        }
+        input[type="range"] { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; height: 20px; outline: none; }
+        input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #222; border-radius: 3px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #00ff66; border-radius: 50%; margin-top: -7px; }
+        input[type="range"]::-moz-range-track { background: #222; height: 6px; }
+        input[type="range"]::-moz-range-thumb { background: #00ff66; height: 18px; width: 18px; }
 
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            background: transparent;
-            cursor: pointer;
-            outline: none;
-            margin: 0;
-            height: 20px;
-        }
-
-        input[type="range"]::-webkit-slider-runnable-track {
-            width: 100%; height: 6px; background: #222; border-radius: 3px; border: 1px solid #333;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 20px; width: 20px; background: #00ff66; border-radius: 50%;
-            border: 3px solid #050505; box-shadow: 0 0 10px rgba(0, 255, 106, 0.4); margin-top: -8px;
-            transition: all 0.1s ease;
-        }
-        input[type="range"]::-moz-range-track {
-            width: 100%; height: 6px; background: #222; border-radius: 3px; border: 1px solid #333;
-        }
-        input[type="range"]::-moz-range-thumb {
-            height: 18px; width: 18px; background: #00ff66; border-radius: 50%; border: 3px solid #050505;
-        }
-        input[type="range"]::-moz-range-progress { background-color: #333; height: 6px; border-radius: 3px; }
-
-        /* Performance Mode Button */
-        .toggle-btn {
-            background: #222;
-            color: #888;
-            border: 1px solid #444;
-            padding: 10px;
-            width: 100%;
-            cursor: pointer;
-            font-family: 'Orbitron';
-            text-transform: uppercase;
-            font-size: 0.8em;
-            transition: all 0.2s;
-        }
-        .toggle-btn.active {
-            background: #00ff66;
-            color: #000;
-            border-color: #00ff66;
-        }
+        .opti-btn { background: #222; color: #888; border: 1px solid #444; padding: 12px; width: 100%; cursor: pointer; font-family: 'Orbitron'; margin-top: 10px; }
+        .opti-btn.active { background: #00ff66; color: #000; border-color: #00ff66; }
 
         .sub-menu { display: none; width: 100%; }
         .sub-menu.active { display: block; }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 80px;
-            background: #00ff66;
-            color: #000;
-            padding: 15px 25px;
-            font-weight: bold;
-            font-family: 'Orbitron', sans-serif;
-            border-radius: 2px;
-            display: none;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
+        .notification { position: fixed; top: 20px; right: 80px; background: #00ff66; color: #000; padding: 15px 25px; font-weight: bold; font-family: 'Orbitron'; border-radius: 2px; display: none; z-index: 1000; }
     </style>
 </head>
 <body>
     <div id="notification" class="notification">ITEM PURCHASED</div>
-
     <div id="settings-trigger" onclick="toggleMenu('settings-menu')">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1V15a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff66" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1V15a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
     <div id="main-menu">
@@ -281,43 +67,37 @@
             <button class="btn" onclick="showSubMenu('mp-menu')">Multiplayer</button>
         </div>
         <div class="menu-panel sub-menu" id="sp-menu">
-            <h3 style="font-family: 'Orbitron'; color: #888;">SELECT DIFFICULTY</h3>
             <button class="btn" onclick="startGame('sp', 'easy')">Easy</button>
             <button class="btn" onclick="startGame('sp', 'normal')">Normal</button>
             <button class="btn" onclick="startGame('sp', 'hard')">Hard</button>
-            <button class="btn" style="border: none; color: #888; font-size: 0.7em;" onclick="showSubMenu('primary-menu')">Back</button>
+            <button class="btn" onclick="showSubMenu('primary-menu')">Back</button>
         </div>
         <div class="menu-panel sub-menu" id="mp-menu">
-            <h3 style="font-family: 'Orbitron'; color: #888;">MULTIPLAYER</h3>
             <button class="btn" onclick="startGame('mp', 'main-room')">Join Public Room</button>
-            <button class="btn" onclick="showSubMenu('custom-room-menu')">Create / Join Room</button>
-            <button class="btn" style="border: none; color: #888; font-size: 0.7em;" onclick="showSubMenu('primary-menu')">Back</button>
+            <button class="btn" onclick="showSubMenu('custom-room-menu')">Custom Room</button>
+            <button class="btn" onclick="showSubMenu('primary-menu')">Back</button>
         </div>
         <div class="menu-panel sub-menu" id="custom-room-menu">
-            <h3 style="font-family: 'Orbitron'; color: #888;">CUSTOM ROOM</h3>
             <input type="text" id="room-input" placeholder="Room Name">
-            <input type="password" id="pass-input" placeholder="Passcode (Optional)">
-            <button class="btn" onclick="joinCustomRoom()">Join Room</button>
-            <button class="btn" style="border: none; color: #888; font-size: 0.7em;" onclick="showSubMenu('mp-menu')">Back</button>
+            <input type="password" id="pass-input" placeholder="Passcode">
+            <button class="btn" onclick="joinCustomRoom()">Join</button>
+            <button class="btn" onclick="showSubMenu('mp-menu')">Back</button>
         </div>
     </div>
 
-    <div id="ui-container">
-        <div id="crosshair"></div>
-        <div id="hud">
-            <div class="hud-item">HP: <span id="hp" style="color: #ff4444;">100</span></div>
-            <div class="hud-item">POINTS: <span id="points" style="color: #00ff66;">0</span></div>
-            <div class="hud-item">WAVE: <span id="wave">1</span></div>
-            <div class="hud-item">WEAPON: <span id="weapon">Fist</span></div>
-            <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;">
-                <button class="btn btn-small" onclick="toggleMenu('shop-menu')">SHOP (B)</button>
-                <button class="btn btn-small" onclick="toggleMenu('room-menu')">ROOMS (M)</button>
-            </div>
+    <div id="ui-container"><div id="crosshair"></div><div id="hud">
+        <div class="hud-item">HP: <span id="hp" style="color: #ff4444;">100</span></div>
+        <div class="hud-item">POINTS: <span id="points" style="color: #00ff66;">0</span></div>
+        <div class="hud-item">WAVE: <span id="wave">1</span></div>
+        <div class="hud-item">WEAPON: <span id="weapon">Fist</span></div>
+        <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;">
+            <button class="btn" style="font-size: 0.7em; width: auto;" onclick="toggleMenu('shop-menu')">SHOP (B)</button>
+            <button class="btn" style="font-size: 0.7em; width: auto;" onclick="toggleMenu('room-menu')">ROOMS (M)</button>
         </div>
-    </div>
+    </div></div>
 
     <div id="settings-menu">
-        <h2 style="font-family: 'Orbitron'; margin-bottom: 20px;">SETTINGS</h2>
+        <h2 style="font-family: 'Orbitron';">SETTINGS</h2>
         <div class="setting-row">
             <div class="setting-label"><span>Field of View</span><span id="fov-val">75</span></div>
             <input type="range" id="fov-slider" min="40" max="120" value="75">
@@ -327,36 +107,29 @@
             <input type="range" id="dist-slider" min="1" max="100" value="50">
         </div>
         <div class="setting-row">
-            <div class="setting-label"><span>Performance Mode</span></div>
-            <button class="toggle-btn" id="perf-toggle" onclick="togglePerformance()">OFF</button>
+            <div class="setting-label"><span>EXTREME OPTIMIZATION</span></div>
+            <button class="opti-btn" id="perf-toggle" onclick="togglePerformance()">OFF</button>
+            <p style="font-size: 0.6em; color: #666; margin-top: 5px;">Disables shadows, dynamic lights, and foliage for high FPS.</p>
         </div>
         <button class="btn" onclick="toggleMenu('settings-menu')">CLOSE</button>
     </div>
 
     <div id="shop-menu">
-        <h2 style="font-family: 'Orbitron'; margin-bottom: 20px;">ARSENAL</h2>
-        <div id="shop-items">
-            <div style="margin: 15px 0; border: 1px solid #222; padding: 20px; background: #0a0a0a;">
-                <h3 style="margin-top: 0;">KNIFE</h3>
-                <p style="color: #888; font-size: 0.9em;">Faster attacks, higher melee damage.</p>
-                <button class="btn" onclick="buyItem('knife', 500)">BUY (500 pts)</button>
-            </div>
-            <div style="margin: 15px 0; border: 1px solid #222; padding: 20px; background: #0a0a0a;">
-                <h3 style="margin-top: 0;">PISTOL</h3>
-                <p style="color: #888; font-size: 0.9em;">Reliable firepower for any distance.</p>
-                <button class="btn" onclick="buyItem('pistol', 1500)">BUY (1500 pts)</button>
-            </div>
-            <div style="margin: 15px 0; border: 1px solid #222; padding: 20px; background: #0a0a0a;">
-                <h3 style="margin-top: 0;">MEDKIT</h3>
-                <p style="color: #888; font-size: 0.9em;">Instantly restore 50% health.</p>
-                <button class="btn" onclick="buyItem('health', 300)">BUY (300 pts)</button>
-            </div>
+        <h2 style="font-family: 'Orbitron';">ARSENAL</h2>
+        <div style="margin: 10px; border: 1px solid #222; padding: 10px;">
+            <h3>KNIFE</h3><button class="btn" onclick="buyItem('knife', 500)">BUY (500)</button>
+        </div>
+        <div style="margin: 10px; border: 1px solid #222; padding: 10px;">
+            <h3>PISTOL</h3><button class="btn" onclick="buyItem('pistol', 1500)">BUY (1500)</button>
+        </div>
+        <div style="margin: 10px; border: 1px solid #222; padding: 10px;">
+            <h3>MEDKIT</h3><button class="btn" onclick="buyItem('health', 300)">BUY (300)</button>
         </div>
         <button class="btn" onclick="toggleMenu('shop-menu')">CLOSE</button>
     </div>
 
     <div id="room-menu">
-        <h2 style="font-family: 'Orbitron';">SWITCH ROOM</h2>
+        <h2 style="font-family: 'Orbitron';">ROOMS</h2>
         <input type="text" id="switch-room-id" placeholder="Room Name">
         <button class="btn" onclick="switchRoom()">SWITCH</button>
         <button class="btn" onclick="toggleMenu('room-menu')">CLOSE</button>
@@ -364,28 +137,14 @@
 
     <script type="module" src="/src/client/main.js"></script>
     <script>
-        function showSubMenu(id) {
-            document.querySelectorAll('.menu-panel').forEach(p => p.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.getElementById('primary-menu').style.display = (id === 'primary-menu') ? 'block' : 'none';
-        }
-
+        function showSubMenu(id) { document.querySelectorAll('.menu-panel').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.getElementById('primary-menu').style.display = (id === 'primary-menu') ? 'block' : 'none'; }
         function toggleMenu(id) {
-            const el = document.getElementById(id);
-            const isOpening = !el.classList.contains('menu-active');
+            const el = document.getElementById(id); const isOpening = !el.classList.contains('menu-active');
             document.querySelectorAll('#shop-menu, #room-menu, #settings-menu').forEach(m => m.classList.remove('menu-active'));
             if (isOpening) { el.classList.add('menu-active'); document.exitPointerLock(); }
         }
-
-        function showNotification(text) {
-            const n = document.getElementById('notification');
-            n.innerText = text; n.style.display = 'block';
-            setTimeout(() => n.style.display = 'none', 3000);
-        }
-
-        window.showSubMenu = showSubMenu;
-        window.toggleMenu = toggleMenu;
-        window.showNotification = showNotification;
+        function showNotification(text) { const n = document.getElementById('notification'); n.innerText = text; n.style.display = 'block'; setTimeout(() => n.style.display = 'none', 3000); }
+        window.showSubMenu = showSubMenu; window.toggleMenu = toggleMenu; window.showNotification = showNotification;
     </script>
 </body>
 </html>
