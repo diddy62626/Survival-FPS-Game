@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survival FPS Multiplayer</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; }
+        #ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%);
+        }
+        #hud { position: absolute; bottom: 20px; left: 20px; pointer-events: auto; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; }
+        .hud-item { margin-bottom: 5px; font-size: 1.2em; font-weight: bold; }
+        #loading-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(45deg, #1a1a1a, #000); color: white; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 100;
+        }
+        .btn {
+            pointer-events: auto; background: #444; color: white; border: none; padding: 10px 20px;
+            cursor: pointer; margin: 5px; border-radius: 5px; font-weight: bold;
+        }
+        .btn:hover { background: #666; }
+        #shop-menu, #room-menu {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95); padding: 30px; border-radius: 15px;
+            display: none; pointer-events: auto; text-align: center; border: 1px solid #444;
+        }
+        .menu-active { display: block !important; }
+        input { padding: 8px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin: 5px; }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <h1 style="font-size: 4em; letter-spacing: 10px; margin-bottom: 0;">SURVIVAL</h1>
+        <p id="loading-text" style="color: #888;">INITIALIZING ENGINE...</p>
+        <button class="btn" id="start-btn" style="display: none;">ENTER BATTLEFIELD</button>
+    </div>
+
+    <div id="ui-container">
+        <div id="crosshair"></div>
+        <div id="hud">
+            <div class="hud-item">HP: <span id="hp" style="color: #ff4444;">100</span></div>
+            <div class="hud-item">POINTS: <span id="points" style="color: #44ff44;">0</span></div>
+            <div class="hud-item">WAVE: <span id="wave">1</span></div>
+            <div class="hud-item">WEAPON: <span id="weapon">Fist</span></div>
+            <div style="margin-top: 10px;">
+                <button class="btn" onclick="toggleMenu('shop-menu')">SHOP (B)</button>
+                <button class="btn" onclick="toggleMenu('room-menu')">ROOMS (M)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="shop-menu">
+        <h2>ARSENAL</h2>
+        <div id="shop-items">
+            <div style="margin: 10px; border: 1px solid #333; padding: 10px;">
+                <h3>KNIFE</h3>
+                <p>Sharper, faster melee.</p>
+                <button class="btn" onclick="buyItem('knife', 500)">BUY (500 pts)</button>
+            </div>
+            <div style="margin: 10px; border: 1px solid #333; padding: 10px;">
+                <h3>PISTOL</h3>
+                <p>The classic sidearm.</p>
+                <button class="btn" onclick="buyItem('pistol', 1500)">BUY (1500 pts)</button>
+            </div>
+             <div style="margin: 10px; border: 1px solid #333; padding: 10px;">
+                <h3>HEALTH PACK</h3>
+                <p>Restore 50 HP.</p>
+                <button class="btn" onclick="buyItem('health', 300)">BUY (300 pts)</button>
+            </div>
+        </div>
+        <button class="btn" onclick="toggleMenu('shop-menu')">CLOSE</button>
+    </div>
+
+    <div id="room-menu">
+        <h2>COMMUNICATIONS</h2>
+        <input type="text" id="room-id" placeholder="Room Name">
+        <input type="password" id="room-pass" placeholder="Passcode (Optional)">
+        <br>
+        <button class="btn" id="join-room-btn">JOIN / CREATE ROOM</button>
+        <br>
+        <button class="btn" id="go-public-btn">GO PUBLIC (MAIN)</button>
+        <br>
+        <button class="btn" onclick="toggleMenu('room-menu')">CLOSE</button>
+    </div>
+
+    <script type="module" src="/src/client/main.js"></script>
+    <script>
+        function toggleMenu(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('menu-active');
+            if (el.classList.contains('menu-active')) {
+                document.exitPointerLock();
+            }
+        }
+        window.toggleMenu = toggleMenu;
+    </script>
+</body>
+</html>

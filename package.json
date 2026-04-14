@@ -1,0 +1,23 @@
+{
+  "name": "survival-fps-game",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "pk-dev": "partykit dev src/server/index.ts",
+    "pk-deploy": "partykit deploy src/server/index.ts"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "gsap": "^3.12.5",
+    "partykit": "^0.0.115",
+    "three": "^0.170.0",
+    "yuka": "^0.7.8",
+    "partysocket": "^1.0.2"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

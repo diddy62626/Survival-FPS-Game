@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "survival-fps-game-server",
+  "main": "src/server/index.ts",
+  "compatibilityDate": "2024-04-14"
+}
