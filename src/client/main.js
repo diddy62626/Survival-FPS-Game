@@ -7,7 +7,7 @@ import { ParticleSystem } from './particles.js';
 
 // Game State
 let isMultiplayer = true;
-let difficulty = 'normal'; // easy, normal, hard
+let difficulty = 'normal';
 let myPoints = 0;
 let myHP = 100;
 let currentWeapon = 1;
@@ -31,7 +31,7 @@ function connect(room = 'main-room') {
     setupSocket();
 }
 
-// Scene & Engine
+// Scene setup
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x020202);
 scene.fog = new THREE.FogExp2(0x020202, 0.04);
@@ -40,7 +40,6 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 const particles = new ParticleSystem(scene);
@@ -56,16 +55,14 @@ const ui = {
 };
 
 // World Construction
-scene.add(new THREE.AmbientLight(0x202020, 1));
+scene.add(new THREE.AmbientLight(0x202020, 1.5));
 const sun = new THREE.DirectionalLight(0xffffff, 0.8);
 sun.position.set(20, 50, 20);
 sun.castShadow = true;
-sun.shadow.camera.left = -50; sun.shadow.camera.right = 50;
-sun.shadow.camera.top = 50; sun.shadow.camera.bottom = -50;
 scene.add(sun);
 
 const groundGeo = new THREE.PlaneGeometry(500, 500);
-const groundMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
@@ -80,20 +77,6 @@ world.addBody(playerBody);
 
 const controls = new PointerLockControls(camera, document.body);
 
-// Assets (Procedural Textures)
-function createNoiseTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-    for (let i = 0; i < 1000; i++) {
-        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.1})`;
-        ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
-    }
-    return new THREE.CanvasTexture(canvas);
-}
-groundMat.map = createNoiseTexture();
-
-// Game Logic
 const otherPlayers = new Map();
 const zombies = new Map();
 
@@ -149,7 +132,6 @@ function attack() {
             }
         }
     }
-
     setTimeout(() => canAttack = true, w.cooldown);
 }
 
@@ -183,7 +165,6 @@ function startWaveLocal(w) {
     }
 }
 
-// Networking Setup
 function setupSocket() {
     socket.onmessage = (e) => {
         const data = JSON.parse(e.data);
@@ -201,6 +182,20 @@ function setupSocket() {
         }
         if (data.type === 'zombieSpawn') spawnZombieClient(data.zombie);
         if (data.type === 'zombieSync') data.zombies.forEach(spawnZombieClient);
+        if (data.type === 'zombieUpdate') {
+            data.zombies.forEach(zData => {
+                const z = zombies.get(zData.id);
+                if (z) {
+                    z.position.lerp(new THREE.Vector3(zData.pos.x, zData.pos.y, zData.pos.z), 0.2);
+                    z.lookAt(playerBody.position.x, 0, playerBody.position.z);
+                }
+            });
+        }
+        if (data.type === 'damagePlayer') {
+            myHP -= data.amount;
+            ui.hp.innerText = Math.max(0, Math.floor(myHP));
+            if (myHP <= 0) { alert("YOU DIED!"); location.reload(); }
+        }
         if (data.type === 'zombieDeath') {
             const z = zombies.get(data.id);
             if (z) { scene.remove(z); zombies.delete(data.id); }
@@ -219,7 +214,7 @@ function spawnZombieClient(zData) {
     zombies.set(zData.id, mesh);
 }
 
-// UI Handlers
+// UI & Controls (same as before)
 window.buyItem = (item, cost) => {
     if (myPoints >= cost) {
         if (item === 'health') {
@@ -255,16 +250,14 @@ document.getElementById('go-public-btn').onclick = () => {
 ui.startBtn.onclick = () => {
     document.getElementById('loading-screen').style.display = 'none';
     isMultiplayer = confirm("Play Multiplayer? (Cancel for Singleplayer)")
-    if (isMultiplayer) {
-        connect();
-    } else {
+    if (isMultiplayer) connect();
+    else {
         difficulty = prompt("Choose Difficulty: easy, normal, hard", "normal") || "normal";
         startWaveLocal(1);
     }
     controls.lock();
 };
 
-// Controls & Movement
 const move = { f: 0, b: 0, l: 0, r: 0, s: 1 };
 window.onkeydown = (e) => {
     if (e.code === 'KeyW') move.f = 1;
@@ -292,7 +285,6 @@ window.onkeyup = (e) => {
     if (e.code === 'ShiftLeft') move.s = 1;
 };
 
-// Loop
 const clock = new THREE.Clock();
 function loop() {
     requestAnimationFrame(loop);
@@ -320,45 +312,36 @@ function loop() {
             socket.send(JSON.stringify({ type: 'move', pos: playerBody.position, rot: camera.quaternion }));
         }
 
-        // Zombie Behavior
-        zombies.forEach((zMesh, id) => {
-            const dist = zMesh.position.distanceTo(playerBody.position);
-            if (dist < 50) {
-                const dir = new THREE.Vector3().subVectors(playerBody.position, zMesh.position).normalize();
-                const zSpeed = (difficulty === 'hard' ? 0.08 : (difficulty === 'easy' ? 0.03 : 0.05)) * (1 + wave * 0.05);
-                zMesh.position.addScaledVector(dir, zSpeed);
-                zMesh.lookAt(playerBody.position.x, 0, playerBody.position.z);
-
-                if (dist < 1.4 && Math.random() < 0.02) {
-                    myHP -= 2;
-                    ui.hp.innerText = Math.max(0, Math.floor(myHP));
-                    if (myHP <= 0) { alert("YOU DIED!"); location.reload(); }
+        if (!isMultiplayer) {
+            zombies.forEach((zMesh, id) => {
+                const dist = zMesh.position.distanceTo(playerBody.position);
+                if (dist < 50) {
+                    const dir = new THREE.Vector3().subVectors(playerBody.position, zMesh.position).normalize();
+                    const zSpeed = (difficulty === 'hard' ? 0.08 : (difficulty === 'easy' ? 0.03 : 0.05)) * (1 + wave * 0.05);
+                    zMesh.position.addScaledVector(dir, zSpeed);
+                    zMesh.lookAt(playerBody.position.x, 0, playerBody.position.z);
+                    if (dist < 1.4 && Math.random() < 0.02) {
+                        myHP -= 1;
+                        ui.hp.innerText = Math.max(0, Math.floor(myHP));
+                        if (myHP <= 0) { alert("YOU DIED!"); location.reload(); }
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     camera.position.copy(playerBody.position);
     camera.position.y += 0.9;
 
-    // Slight head bob
     if (move.f || move.b || move.l || move.r) {
         const t = clock.elapsedTime * 10;
         camera.position.y += Math.sin(t) * 0.05;
-        viewmodel.position.y = Math.sin(t) * 0.02;
     }
 
     renderer.render(scene, camera);
 }
-
-// Show start button after small delay
-setTimeout(() => {
-    ui.loadingText.innerText = "READY FOR COMBAT";
-    ui.startBtn.style.display = "block";
-}, 1500);
-
+setTimeout(() => { ui.loadingText.innerText = "READY FOR COMBAT"; ui.startBtn.style.display = "block"; }, 1500);
 loop();
-
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();

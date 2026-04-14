@@ -4,29 +4,32 @@ interface Zombie {
     id: string;
     pos: { x: number, y: number, z: number };
     hp: number;
-    targetPlayerId?: string;
 }
 
 export default class Server implements Party.Server {
-  players: Map<string, any> = new Map();
+  players: Map<string, { pos: { x: number, y: number, z: number }, hp: number }> = new Map();
   zombies: Map<string, Zombie> = new Map();
   wave: number = 0;
   waveActive: boolean = false;
   lastZombieId: number = 0;
+  tickInterval: any = null;
 
   constructor(readonly party: Party.Party) {}
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
-    this.players.set(conn.id, { pos: { x: 0, y: 0, z: 0 }, rot: { x: 0, y: 0, z: 0, w: 1 }, hp: 100 });
+    this.players.set(conn.id, { pos: { x: 0, y: 0, z: 0 }, hp: 100 });
     conn.send(JSON.stringify({ type: 'init', id: conn.id, wave: this.wave }));
 
-    // Send existing zombies to the new player
     if (this.zombies.size > 0) {
         conn.send(JSON.stringify({ type: 'zombieSync', zombies: Array.from(this.zombies.values()) }));
     }
 
     if (!this.waveActive && this.players.size > 0) {
         this.startNextWave();
+    }
+
+    if (!this.tickInterval) {
+        this.tickInterval = setInterval(() => this.tick(), 50); // 20fps
     }
   }
 
@@ -44,7 +47,7 @@ export default class Server implements Party.Server {
   spawnZombie() {
     const id = "zombie_" + (++this.lastZombieId);
     const angle = Math.random() * Math.PI * 2;
-    const dist = 20 + Math.random() * 10;
+    const dist = 30 + Math.random() * 10;
     const zombie: Zombie = {
         id,
         pos: { x: Math.cos(angle) * dist, y: 0, z: Math.sin(angle) * dist },
@@ -54,6 +57,41 @@ export default class Server implements Party.Server {
     this.party.broadcast(JSON.stringify({ type: 'zombieSpawn', zombie }));
   }
 
+  tick() {
+    if (this.zombies.size === 0) return;
+
+    const zombieUpdates: any[] = [];
+    const zombieSpeed = 0.05 + (this.wave * 0.005);
+
+    this.zombies.forEach((z) => {
+        let nearestPlayer: any = null;
+        let minDist = Infinity;
+
+        this.players.forEach((p, id) => {
+            const dx = p.pos.x - z.pos.x;
+            const dz = p.pos.z - z.pos.z;
+            const d = Math.sqrt(dx*dx + dz*dz);
+            if (d < minDist) {
+                minDist = d;
+                nearestPlayer = { id, dx, dz, d };
+            }
+        });
+
+        if (nearestPlayer && nearestPlayer.d < 50) {
+            z.pos.x += (nearestPlayer.dx / nearestPlayer.d) * zombieSpeed;
+            z.pos.z += (nearestPlayer.dz / nearestPlayer.d) * zombieSpeed;
+
+            if (nearestPlayer.d < 1.5 && Math.random() < 0.05) {
+                this.party.getConnection(nearestPlayer.id)?.send(JSON.stringify({ type: 'damagePlayer', amount: 2 }));
+            }
+        }
+
+        zombieUpdates.push({ id: z.id, pos: z.pos });
+    });
+
+    this.party.broadcast(JSON.stringify({ type: 'zombieUpdate', zombies: zombieUpdates }));
+  }
+
   onMessage(message: string, sender: Party.Connection) {
     const data = JSON.parse(message);
 
@@ -61,7 +99,6 @@ export default class Server implements Party.Server {
       const player = this.players.get(sender.id);
       if (player) {
         player.pos = data.pos;
-        player.rot = data.rot;
       }
       this.party.broadcast(JSON.stringify({ type: 'playerUpdate', id: sender.id, pos: data.pos, rot: data.rot }), [sender.id]);
     }
@@ -76,7 +113,7 @@ export default class Server implements Party.Server {
 
                 if (this.zombies.size === 0) {
                     this.waveActive = false;
-                    setTimeout(() => { if (!this.waveActive) this.startNextWave(); }, 5000);
+                    setTimeout(() => { if (!this.waveActive && this.players.size > 0) this.startNextWave(); }, 5000);
                 }
             }
         }
@@ -85,6 +122,10 @@ export default class Server implements Party.Server {
 
   onClose(conn: Party.Connection) {
     this.players.delete(conn.id);
+    if (this.players.size === 0 && this.tickInterval) {
+        clearInterval(this.tickInterval);
+        this.tickInterval = null;
+    }
     this.party.broadcast(JSON.stringify({ type: 'playerLeft', id: conn.id }));
   }
 }
