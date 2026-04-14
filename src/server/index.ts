@@ -16,6 +16,11 @@ export default class Server implements Party.Server {
 
   constructor(readonly party: Party.Party) {}
 
+  // Added based on user example for room info
+  onRequest(request: Request) {
+    return new Response(`Survival FPS - Room: ${this.party.id}. Players: ${this.players.size}. Wave: ${this.wave}`);
+  }
+
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     this.players.set(conn.id, { pos: { x: 0, y: 0, z: 0 }, hp: 100 });
     conn.send(JSON.stringify({ type: 'init', id: conn.id, wave: this.wave }));
