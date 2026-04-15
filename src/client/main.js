@@ -7,7 +7,6 @@ import { ParticleSystem } from './particles.js';
 import { EnvironmentManager } from './environment.js';
 import { UIEffectsManager } from './ui_effects.js';
 
-// Game State
 let isMultiplayer = false, myPoints = 0, myHP = 100, maxHP = 100, currentWeapon = 1, canAttack = true, wave = 1;
 let enemiesRemaining = 0, totalEnemiesInWave = 0, enemiesKilledInWave = 0;
 let roomName = 'main-room', isPerformanceMode = false, gameStarted = false, physicsPaused = false;
@@ -20,7 +19,6 @@ const weapons = {
     3: { name: 'Pistol', range: 120, damage: 60, cooldown: 500, owned: false }
 };
 
-// Scene Setup
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x050505);
 const fog = new THREE.FogExp2(0x050505, 0.01); scene.fog = fog;
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 4000);
@@ -29,38 +27,28 @@ renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
-// Physics
 const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -20, 0) });
 const playerBody = new CANNON.Body({
     mass: 1, shape: new CANNON.Sphere(0.6), position: new CANNON.Vec3(0, 50, 0),
-    fixedRotation: true, linearDamping: 0.95,
-    material: new CANNON.Material({friction: 0.0})
+    fixedRotation: true, linearDamping: 0.95
 });
 world.addBody(playerBody);
+
+const viewmodel = new THREE.Group();
+camera.add(viewmodel);
+scene.add(camera);
+const weaponMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.6), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+weaponMesh.position.set(0.4, -0.4, -0.6);
+viewmodel.add(weaponMesh);
 
 const particles = new ParticleSystem(scene);
 const env = new EnvironmentManager(scene, world);
 const fx = new UIEffectsManager(scene, camera);
 const controls = new PointerLockControls(camera, document.body);
 
-// Physics Control
 let savedPos = new CANNON.Vec3();
-window.tryLockMouse = () => {
-    if (gameStarted) {
-        physicsPaused = false;
-        playerBody.position.copy(savedPos);
-        playerBody.velocity.set(0,0,0);
-        controls.lock();
-    }
-};
-window.unlockMouse = () => {
-    if (gameStarted) {
-        physicsPaused = true;
-        savedPos.copy(playerBody.position);
-        playerBody.velocity.set(0,0,0);
-        controls.unlock();
-    }
-};
+window.tryLockMouse = () => { if (gameStarted) { physicsPaused = false; controls.lock(); } };
+window.unlockMouse = () => { if (gameStarted) { physicsPaused = true; playerBody.velocity.set(0,0,0); controls.unlock(); } };
 
 window.toggleMenu = (id) => {
     const el = document.getElementById(id);
@@ -74,71 +62,66 @@ window.toggleMenu = (id) => {
     }
 };
 
-// Enemy Data
-const enemyPool = [
-    { name: 'Zombie', tier: 1, hp: 50, speed: 0.06, damage: 5, gold: 50, color: 0x336633, scale: 1 },
-    { name: 'Rat', tier: 1, hp: 20, speed: 0.12, damage: 2, gold: 20, color: 0x664422, scale: 0.4 },
-    { name: 'Skeleton', tier: 1, hp: 40, speed: 0.08, damage: 6, gold: 60, color: 0xeeeeee, scale: 0.9 },
-    { name: 'Orc', tier: 2, hp: 150, speed: 0.05, damage: 15, gold: 150, color: 0x114411, scale: 1.4 },
-    { name: 'Troll', tier: 2, hp: 400, speed: 0.03, damage: 30, gold: 300, color: 0x444422, scale: 2.2 },
-    { name: 'Demon Knight', tier: 3, hp: 1000, speed: 0.07, damage: 50, gold: 1000, color: 0x660000, scale: 1.8 }
-];
-const zombies = new Map();
+window.togglePerformance = () => {
+    isPerformanceMode = !isPerformanceMode;
+    document.getElementById('perf-toggle').innerText = 'OPTIMIZATION: ' + (isPerformanceMode ? 'ON' : 'OFF');
+    env.setPerformanceMode(isPerformanceMode);
+};
 
-// Game Logic
+const fovSlider = document.getElementById('fov-slider');
+fovSlider.oninput = () => { camera.fov = parseInt(fovSlider.value); document.getElementById('fov-val').innerText = camera.fov; camera.updateProjectionMatrix(); };
+
 window.startGame = (mode, param) => {
-    isMultiplayer = (mode === 'mp');
-    gameStarted = true;
+    const sInput = document.getElementById('seed-input').value;
+    if (sInput) mapSeed = parseInt(sInput) || mapSeed;
+    isMultiplayer = (mode === 'mp'); gameStarted = true;
+    env.setSeed(mapSeed.toString());
     if (isMultiplayer) connect(param);
-    else { env.generateCity('offline-' + mapSeed); startWave(1); }
+    else { startWave(1); }
     document.getElementById('main-menu').style.opacity = '0';
     setTimeout(() => document.getElementById('main-menu').style.display = 'none', 500);
     controls.lock();
 };
 
 function startWave(w) {
-    wave = w;
-    enemiesKilledInWave = 0;
-    totalEnemiesInWave = 5 + wave * 5;
-    enemiesRemaining = totalEnemiesInWave;
-
-    showBanner("WAVE " + wave + " STARTING");
-    updateHUD();
-
-    for (let i = 0; i < totalEnemiesInWave; i++) {
-        setTimeout(() => spawnEnemy(), i * 1000);
-    }
+    wave = w; enemiesKilledInWave = 0; totalEnemiesInWave = 5 + wave * 5; enemiesRemaining = totalEnemiesInWave;
+    showBanner("WAVE " + wave + " STARTING"); updateHUD();
+    for (let i = 0; i < totalEnemiesInWave; i++) setTimeout(() => spawnEnemy(), i * 1000);
 }
 
 function showBanner(text) {
     const b = document.createElement('div');
     b.style = "position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); color:#00ff66; font-family:Orbitron; font-size:4em; font-weight:900; z-index:20000; pointer-events:none; text-shadow:0 0 20px #000;";
-    b.innerText = text;
-    document.body.appendChild(b);
+    b.innerText = text; document.body.appendChild(b);
     GSAP.to(b, { opacity: 0, duration: 2, delay: 1, onComplete: () => b.remove() });
 }
 
+const enemyNames = ["Zombie", "Rat", "Goblin", "Skeleton", "Crow", "Slime", "Bat", "Wild Dog", "Bandit", "Ghoul", "Orc", "Troll", "Werewolf", "Wyvern", "Golem", "Giant", "Demon"];
+const zombies = new Map();
+
 function spawnEnemy() {
     const tier = wave <= 3 ? 1 : (wave <= 8 ? 2 : 3);
-    const possible = enemyPool.filter(e => e.tier <= tier);
-    const proto = possible[Math.floor(Math.random() * possible.length)];
+    const typeIdx = Math.floor(Math.random() * enemyNames.length);
+    const name = enemyNames[typeIdx];
 
     const angle = Math.random() * Math.PI * 2;
     const dist = 60 + Math.random() * 40;
     const id = 'enemy_' + Math.random();
 
-    spawnEnemyClient({
+    const data = {
         id,
         pos: { x: Math.cos(angle)*dist, y: 50, z: Math.sin(angle)*dist },
-        hp: proto.hp * (1 + wave * 0.1),
-        maxHp: proto.hp * (1 + wave * 0.1),
-        speed: proto.speed,
-        damage: proto.damage,
-        gold: proto.gold,
-        color: proto.color,
-        scale: proto.scale,
-        name: proto.name
-    });
+        hp: (50 + wave * 20) * (tier * 0.5 + 0.5),
+        maxHp: (50 + wave * 20) * (tier * 0.5 + 0.5),
+        speed: 0.05 + Math.random() * 0.05,
+        damage: 5 + tier * 5,
+        gold: 50 + tier * 50,
+        color: new THREE.Color().setHSL(Math.random(), 0.6, 0.4).getHex(),
+        scale: 0.5 + Math.random() * 1.5,
+        name
+    };
+
+    spawnEnemyClient(data);
 }
 
 function spawnEnemyClient(data) {
@@ -148,7 +131,6 @@ function spawnEnemyClient(data) {
     b.position.y = (1.8 * data.scale) / 2;
     group.add(b);
 
-    // Health Bar
     const hbGroup = new THREE.Group();
     const hbBg = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.15), new THREE.MeshBasicMaterial({color:0x000000}));
     const hbFg = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.15), new THREE.MeshBasicMaterial({color:0x00ff00}));
@@ -167,11 +149,23 @@ function spawnEnemyClient(data) {
     zombies.set(data.id, group);
 }
 
+function updateHUD() {
+    document.getElementById('hp').innerText = Math.floor(myHP);
+    document.getElementById('points').innerText = myPoints;
+    document.getElementById('wave').innerText = wave;
+    document.getElementById('enemies-left').innerText = enemiesRemaining + " LEFT";
+    const progress = (enemiesKilledInWave / totalEnemiesInWave) * 100;
+    const wp = document.getElementById('wave-progress');
+    if(wp) wp.style.width = progress + "%";
+}
+
+document.addEventListener('mousedown', (e) => { if (controls.isLocked && e.button === 0) attack(); });
+
 function attack() {
     if (!canAttack || myHP <= 0 || physicsPaused) return;
     canAttack = false;
     const w = weapons[currentWeapon];
-    GSAP.to(viewmodel.position, { z: 0.15, duration: 0.1 / fireRateMult, yoyo: true, repeat: 1 });
+    GSAP.to(viewmodel.position, { z: 0.15, duration: 0.1, yoyo: true, repeat: 1 });
 
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera({x:0, y:0}, camera);
@@ -202,34 +196,9 @@ function attack() {
             }
         }
     }
-    setTimeout(() => canAttack = true, w.cooldown / fireRateMult);
+    setTimeout(() => canAttack = true, w.cooldown);
 }
 
-function updateHUD() {
-    document.getElementById('hp').innerText = Math.floor(myHP);
-    document.getElementById('points').innerText = myPoints;
-    document.getElementById('wave').innerText = wave;
-    document.getElementById('enemies-left').innerText = enemiesRemaining;
-    const progress = (enemiesKilledInWave / totalEnemiesInWave) * 100;
-    document.getElementById('wave-progress').style.width = progress + "%";
-}
-
-// Global Handlers
-window.buyItem = (item, cost) => {
-    if (myPoints >= cost) {
-        myPoints -= cost;
-        if (item === 'health') myHP = Math.min(maxHP, myHP + 50);
-        else if (item === 'maxhp') { maxHP += 50; myHP += 50; }
-        else if (item === 'speed') moveSpeed += 1;
-        else if (item === 'damage') damageMult += 0.2;
-        else if (item === 'gold') goldMult += 0.2;
-        else if (item === 'firerate') fireRateMult += 0.2;
-        else if (weapons[item === 'knife' ? 2 : 3]) weapons[item === 'knife' ? 2 : 3].owned = true;
-        updateHUD(); window.showNotification("UPGRADE PURCHASED");
-    } else alert("Insufficient Credits");
-};
-
-// Loop
 const clock = new THREE.Clock();
 function loop() {
     requestAnimationFrame(loop);
@@ -266,6 +235,8 @@ function loop() {
         }
     }
 
+    env.updateChunks(playerBody.position);
+
     zombies.forEach(z => {
         if (!physicsPaused) {
             const dist = z.position.distanceTo(playerBody.position);
@@ -277,7 +248,7 @@ function loop() {
                 z.lookAt(playerBody.position.x, z.position.y, playerBody.position.z);
                 if (dist < 2 && Math.random() < 0.05) {
                     myHP -= z.userData.damage * 0.016; updateHUD();
-                    if (myHP <= 0) { alert("WASTED"); location.reload(); }
+                    if (myHP <= 0) location.reload();
                 }
             }
         }
@@ -293,7 +264,6 @@ window.keys = {};
 window.onkeydown = (e) => {
     window.keys[e.code] = true;
     if (e.code === 'KeyB') window.toggleMenu('shop-menu');
-    if (e.code === 'KeyM') window.toggleMenu('room-menu');
     if (e.code === 'Tab') { e.preventDefault(); window.toggleMenu('settings-menu'); }
     if (e.code === 'Space' && Math.abs(playerBody.velocity.y) < 0.1) playerBody.velocity.y = 8;
     if (e.code.startsWith('Digit')) {
