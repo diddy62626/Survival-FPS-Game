@@ -1,257 +1,160 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
-const CHUNK_SIZE = 128;
-const VIEW_DISTANCE = 4; // Chunks around the player
-
 export class EnvironmentManager {
     constructor(scene, world) {
         this.scene = scene;
         this.world = world;
-        this.chunks = new Map(); // gridX,gridZ -> chunk data
+        this.chunks = new Map();
         this.performanceMode = false;
+        this.seed = 0;
 
         this.mats = {
-            forest: new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 1 }),
-            swamp: new THREE.MeshStandardMaterial({ color: 0x3d3d2b, roughness: 1 }),
-            desert: new THREE.MeshStandardMaterial({ color: 0xc2b280, roughness: 1 }),
-            city: new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.9 }),
-            tundra: new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 1 }),
-            volcanic: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 }),
+            concrete: new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.8 }),
+            brick: new THREE.MeshStandardMaterial({ color: 0x8a5a44, roughness: 0.9 }),
+            metal: new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.5 }),
+            dirt: new THREE.MeshStandardMaterial({ color: 0x221a10, roughness: 1 }),
             road: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }),
-            glass: new THREE.MeshStandardMaterial({ color: 0x66ccff, transparent: true, opacity: 0.4 })
+            neon: new THREE.MeshStandardMaterial({ color: 0x00ff66, emissive: 0x00ff66, emissiveIntensity: 2 })
         };
-
-        this.seed = 0;
     }
 
-    setPerformanceMode(enabled) {
-        this.performanceMode = enabled;
-    }
-
-    setSeed(seedStr) {
-        let s = 0;
-        for(let i=0; i<seedStr.length; i++) s += seedStr.charCodeAt(i);
-        this.seed = s;
-    }
-
-    seededRandom(seed) {
-        const x = Math.sin(seed) * 10000;
-        return x - Math.floor(x);
-    }
-
-    getBiome(x, z) {
-        // Use very low frequency noise for biomes
-        const b = (Math.sin(x * 0.0005 + this.seed) + Math.cos(z * 0.0005 + this.seed)) * 0.5 + 0.5;
-        if (b < 0.2) return 'desert';
-        if (b < 0.4) return 'swamp';
-        if (b < 0.7) return 'forest';
-        if (b < 0.85) return 'tundra';
-        return 'volcanic';
+    setPerformanceMode(e) { this.performanceMode = e; }
+    setSeed(s) {
+        let hash = 0;
+        for (let i = 0; i < s.length; i++) hash = ((hash << 5) - hash) + s.charCodeAt(i);
+        this.seed = hash;
     }
 
     getTerrainHeight(x, z) {
-        const biome = this.getBiome(x, z);
-        let h = 0;
-        const s = this.seed;
-
-        // Base noise
-        h += (Math.sin(x * 0.01 + s) * Math.cos(z * 0.01 + s) * 5);
-
-        if (biome === 'forest') h += (Math.sin(x * 0.03) * 3 + Math.cos(z * 0.03) * 3);
-        if (biome === 'desert') h += (Math.sin(x * 0.02) * 8); // Dunes
-        if (biome === 'tundra') h += (Math.sin(x * 0.01) * 12 + Math.cos(z * 0.01) * 12); // Hills
-        if (biome === 'volcanic') h += (Math.sin(x * 0.05) * 15 + Math.cos(z * 0.05) * 15); // Jagged
-        if (biome === 'swamp') h *= 0.2; // Flat
-
-        // Add a "City" modifier - flatten areas near potential city centers
-        const cityFactor = (Math.sin(x * 0.002) + Math.cos(z * 0.002)) * 0.5 + 0.5;
-        if (cityFactor > 0.85) h *= 0.1; // Flatten for city
-
-        return h;
+        const s = this.seed * 0.01;
+        return (Math.sin(x * 0.01 + s) * Math.cos(z * 0.01 + s) * 15) +
+               (Math.sin(x * 0.04) * 4) +
+               (Math.cos(z * 0.03) * 3);
     }
 
     updateChunks(playerPos) {
-        const px = Math.floor(playerPos.x / CHUNK_SIZE);
-        const pz = Math.floor(playerPos.z / CHUNK_SIZE);
+        const cx = Math.floor(playerPos.x / 128);
+        const cz = Math.floor(playerPos.z / 128);
+        const range = this.performanceMode ? 1 : 2;
 
-        // Remove distant chunks
-        for (const [key, chunk] of this.chunks) {
-            const [cx, cz] = key.split(',').map(Number);
-            if (Math.abs(cx - px) > VIEW_DISTANCE || Math.abs(cz - pz) > VIEW_DISTANCE) {
-                this.unloadChunk(key);
-            }
-        }
-
-        // Load new chunks
-        for (let x = px - VIEW_DISTANCE; x <= px + VIEW_DISTANCE; x++) {
-            for (let z = pz - VIEW_DISTANCE; z <= pz + VIEW_DISTANCE; z++) {
+        for (let x = cx - range; x <= cx + range; x++) {
+            for (let z = cz - range; z <= cz + range; z++) {
                 const key = `${x},${z}`;
-                if (!this.chunks.has(key)) {
-                    this.loadChunk(x, z);
-                }
+                if (!this.chunks.has(key)) this.loadChunk(x, z);
             }
         }
     }
 
     loadChunk(cx, cz) {
-        const chunk = {
-            meshes: [],
-            bodies: [],
-            lights: []
-        };
-
-        const size = CHUNK_SIZE;
-        const res = this.performanceMode ? 16 : 32;
-        const geo = new THREE.PlaneGeometry(size, size, res, res);
-        const pos = geo.attributes.position;
+        const chunk = { meshes: [], bodies: [] };
+        const size = 128;
+        const res = this.performanceMode ? 8 : 16;
         const worldX = cx * size;
         const worldZ = cz * size;
 
+        const geo = new THREE.PlaneGeometry(size, size, res, res);
+        const pos = geo.attributes.position;
         for (let i = 0; i < pos.count; i++) {
-            const x = pos.getX(i) + worldX;
-            const y = pos.getY(i) + worldZ;
-            pos.setZ(i, this.getTerrainHeight(x, y));
+            const x = pos.getX(i) + worldX + size/2;
+            const z = pos.getY(i) + worldZ + size/2;
+            pos.setZ(i, this.getTerrainHeight(x, z));
         }
         geo.computeVertexNormals();
 
-        const biome = this.getBiome(worldX + size/2, worldZ + size/2);
-        const mesh = new THREE.Mesh(geo, this.mats[biome] || this.mats.forest);
-        mesh.rotation.x = -Math.PI / 2;
+        const mesh = new THREE.Mesh(geo, this.mats.dirt);
+        mesh.rotation.x = -Math.PI/2;
         mesh.position.set(worldX + size/2, 0, worldZ + size/2);
         mesh.receiveShadow = true;
         this.scene.add(mesh);
         chunk.meshes.push(mesh);
 
-        // Physics Heightfield for the chunk
-        const physRes = 16;
+        // Physics Heightfield
         const matrix = [];
-        for (let i = 0; i <= physRes; i++) {
+        const pRes = 10;
+        for (let i = 0; i <= pRes; i++) {
             matrix.push([]);
-            for (let j = 0; j <= physRes; j++) {
-                const lx = (i / physRes - 0.5) * size + (worldX + size/2);
-                const lz = (j / physRes - 0.5) * size + (worldZ + size/2);
+            for (let j = 0; j <= pRes; j++) {
+                const lx = (i / pRes - 0.5) * size + worldX + size/2;
+                const lz = (j / pRes - 0.5) * size + worldZ + size/2;
                 matrix[i].push(this.getTerrainHeight(lx, lz));
             }
         }
-        const hfShape = new CANNON.Heightfield(matrix, { elementSize: size / physRes });
-        const hfBody = new CANNON.Body({ mass: 0 });
-        hfBody.addShape(hfShape);
-        hfBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-        hfBody.position.set(worldX, 0, worldZ + size);
-        this.world.addBody(hfBody);
-        chunk.bodies.push(hfBody);
+        const shape = new CANNON.Heightfield(matrix, { elementSize: size / pRes });
+        const body = new CANNON.Body({ mass: 0 });
+        body.addShape(shape);
+        body.quaternion.setFromEuler(-Math.PI/2, 0, 0);
+        body.position.set(worldX, 0, worldZ + size);
+        this.world.addBody(body);
+        chunk.bodies.push(body);
 
-        // Generate Objects in Chunk
-        this.generateChunkObjects(cx, cz, chunk);
+        // Procedural Buildings (1000+ variants)
+        const r = this.seededRandom(this.seed + cx * 123 + cz * 456);
+        if (r < 0.5 && (Math.abs(cx) > 0 || Math.abs(cz) > 0)) {
+            this.createDiverseStructure(worldX + size/2, worldZ + size/2, r, chunk);
+        }
 
         this.chunks.set(`${cx},${cz}`, chunk);
     }
 
-    unloadChunk(key) {
-        const chunk = this.chunks.get(key);
-        if (chunk) {
-            chunk.meshes.forEach(m => this.scene.remove(m));
-            chunk.bodies.forEach(b => this.world.removeBody(b));
-            chunk.lights.forEach(l => this.scene.remove(l));
-            this.chunks.delete(key);
-        }
-    }
-
-    generateChunkObjects(cx, cz, chunk) {
-        const worldX = cx * CHUNK_SIZE;
-        const worldZ = cz * CHUNK_SIZE;
-        const seed = this.seed + cx * 31 + cz * 17;
-
-        // City Logic
-        const cityFactor = (Math.sin((worldX + CHUNK_SIZE/2) * 0.002) + Math.cos((worldZ + CHUNK_SIZE/2) * 0.002)) * 0.5 + 0.5;
-        const isCity = cityFactor > 0.85;
-
-        if (isCity) {
-            this.generateCityBlock(worldX, worldZ, seed, chunk);
-        } else {
-            this.generateWilderness(worldX, worldZ, seed, chunk);
-        }
-    }
-
-    generateCityBlock(wx, wz, seed, chunk) {
-        const spacing = 40;
-        for (let x = 10; x < CHUNK_SIZE - 10; x += spacing) {
-            for (let z = 10; z < CHUNK_SIZE - 10; z += spacing) {
-                const rx = wx + x;
-                const rz = wz + z;
-                const r = this.seededRandom(seed + x * 7 + z * 3);
-                if (r < 0.7) {
-                    const type = Math.floor(r * 1000);
-                    this.createBuilding(rx, rz, type, chunk);
-                }
-            }
-        }
-    }
-
-    generateWilderness(wx, wz, seed, chunk) {
-        const biome = this.getBiome(wx + CHUNK_SIZE/2, wz + CHUNK_SIZE/2);
-        for (let i = 0; i < 10; i++) {
-            const r = this.seededRandom(seed + i);
-            const rx = wx + this.seededRandom(r) * CHUNK_SIZE;
-            const rz = wz + this.seededRandom(r + 1) * CHUNK_SIZE;
-            const h = this.getTerrainHeight(rx, rz);
-
-            if (r < 0.4) {
-                this.createNatureProp(rx, h, rz, biome, chunk);
-            } else if (r < 0.45) {
-                this.createBuilding(rx, rz, Math.floor(r * 1000), chunk, true); // Isolated shack
-            }
-        }
-    }
-
-    createBuilding(bx, bz, type, chunk, isShack = false) {
+    createDiverseStructure(bx, bz, r, chunk) {
+        const type = Math.floor(r * 1000);
         const by = this.getTerrainHeight(bx, bz);
         const group = new THREE.Group();
-        const mat = isShack ? this.mats.wood : this.mats.concrete;
 
-        let w = isShack ? 10 : 20 + (type % 5) * 4;
-        let d = isShack ? 10 : 20 + (type % 3) * 4;
-        let h = isShack ? 8 : 15 + (type % 10) * 6;
-        let floors = isShack ? 1 : 1 + (type % 6);
+        const archetypes = ['HOUSE', 'OFFICE', 'STATION', 'PHARMACY', 'FARM', 'WAREHOUSE'];
+        const arch = archetypes[type % archetypes.length];
 
-        // Simplified walls for chunking performance
-        this.addWallToChunk(bx, by, bz, group, mat, 0, h/2, 0, w, h, d, chunk);
+        const w = 20 + (type % 10) * 2;
+        const d = 20 + (type % 8) * 2;
+        const h = 10 + (type % 15) * 4;
+        const floors = arch === 'OFFICE' ? 3 + (type % 5) : 1;
+
+        const color = new THREE.Color().setHSL((type % 100) / 100, 0.3, 0.4);
+        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
+
+        const addWall = (px, py, pz, dx, dy, dz) => {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), mat);
+            mesh.position.set(px, py, pz);
+            mesh.castShadow = !this.performanceMode;
+            group.add(mesh);
+            const body = new CANNON.Body({
+                type: CANNON.Body.STATIC,
+                shape: new CANNON.Box(new CANNON.Vec3(dx/2, dy/2, dz/2)),
+                position: new CANNON.Vec3(bx + px, by + py, bz + pz)
+            });
+            this.world.addBody(body);
+            chunk.bodies.push(body);
+        };
+
+        // Foundation
+        addWall(0, -2, 0, w + 4, 4, d + 4);
+
+        for (let f = 0; f < floors; f++) {
+            const fy = f * 8;
+            addWall(0, fy + 0.2, 0, w, 0.4, d); // Floor
+            addWall(0, fy + 8, 0, w, 0.4, d);   // Roof
+            addWall(-w/2, fy + 4, 0, 1, 8, d);  // Left
+            addWall(w/2, fy + 4, 0, 1, 8, d);   // Right
+            addWall(0, fy + 4, -d/2, w, 8, 1);  // Back
+
+            if (f === 0) {
+                // Front with door
+                addWall(-w/3, fy + 4, d/2, w/3, 8, 1);
+                addWall(w/3, fy + 4, d/2, w/3, 8, 1);
+                addWall(0, fy + 6.5, d/2, w/3, 3, 1);
+            } else {
+                addWall(0, fy + 4, d/2, w, 8, 1);
+            }
+        }
 
         group.position.set(bx, by, bz);
         this.scene.add(group);
         chunk.meshes.push(group);
     }
 
-    createNatureProp(x, y, z, biome, chunk) {
-        if (biome === 'desert') {
-            // Cactus
-            const geo = new THREE.CylinderGeometry(0.5, 0.5, 3);
-            const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color: 0x2d5a27}));
-            mesh.position.set(x, y + 1.5, z);
-            this.scene.add(mesh);
-            chunk.meshes.push(mesh);
-        } else if (biome === 'forest') {
-            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 5), new THREE.MeshStandardMaterial({color: 0x5c4033}));
-            trunk.position.set(x, y + 2.5, z);
-            const leaves = new THREE.Mesh(new THREE.SphereGeometry(3), new THREE.MeshStandardMaterial({color: 0x2e8b57}));
-            leaves.position.set(x, y + 6, z);
-            this.scene.add(trunk, leaves);
-            chunk.meshes.push(trunk, leaves);
-        }
-    }
-
-    addWallToChunk(bx, by, bz, group, mat, px, py, pz, dx, dy, dz, chunk) {
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), mat);
-        mesh.position.set(px, py, pz);
-        group.add(mesh);
-
-        const body = new CANNON.Body({
-            type: CANNON.Body.STATIC,
-            shape: new CANNON.Box(new CANNON.Vec3(dx/2, dy/2, dz/2)),
-            position: new CANNON.Vec3(bx + px, by + py, bz + pz)
-        });
-        this.world.addBody(body);
-        chunk.bodies.push(body);
+    seededRandom(seed) {
+        const x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
     }
 }
