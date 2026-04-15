@@ -3,124 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survival FPS</title>
+    <title>SURVIVAL FPS</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Share+Tech+Mono&display=swap');
+        :root { --neon: #00ff66; --dark: #0a0a0a; --zinc: #1a1a1a; --glow: rgba(0, 255, 102, 0.3); }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100%; height: 100%; background: #000; color: #fff; overflow: hidden; font-family: 'Orbitron', sans-serif; }
+        body { overflow: hidden; background: #000; font-family: 'Share Tech Mono', monospace; color: #fff; width: 100vw; height: 100vh; }
 
-        #main-menu {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            background: #050505; z-index: 10000;
-        }
-        .menu-container {
-            width: 500px; background: #111; padding: 60px;
-            border: 2px solid #333; border-top: 6px solid #00ff66;
-            text-align: center; box-shadow: 0 0 100px rgba(0,0,0,1);
-        }
-        h1 { font-size: 4em; color: #00ff66; margin-bottom: 40px; letter-spacing: 15px; }
+        /* ABSOLUTELY CENTERED MAIN MENU */
+        #main-menu { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(20,20,20,0.4) 0%, #000 100%); z-index: 9999; transition: 0.5s; }
+        .menu-frame { background: rgba(10, 10, 10, 0.95); padding: 60px; width: 550px; text-align: center; border-top: 5px solid var(--neon); box-shadow: 0 0 50px #000; position: relative; clip-path: polygon(0% 15%, 15% 0%, 100% 0%, 100% 85%, 85% 100%, 0% 100%); }
+        h1 { font-family: 'Orbitron', sans-serif; font-size: 5em; margin-bottom: 50px; letter-spacing: 20px; text-shadow: 0 0 10px var(--neon); }
+        .custom-btn { background: transparent; color: #fff; border: 1px solid var(--neon); padding: 18px; font-family: 'Orbitron'; text-transform: uppercase; letter-spacing: 5px; cursor: pointer; transition: 0.3s; width: 100%; margin: 10px 0; font-size: 1.1em; clip-path: polygon(0% 0%, 90% 0%, 100% 30%, 100% 100%, 10% 100%, 0% 70%); }
+        .custom-btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 30px var(--neon); }
 
-        .btn {
-            display: block; width: 100%; background: transparent; color: #fff;
-            border: 1px solid #444; padding: 22px; margin: 15px 0;
-            text-transform: uppercase; letter-spacing: 4px; cursor: pointer; transition: 0.3s;
-            font-size: 1.2em; font-family: 'Orbitron', sans-serif;
-        }
-        .btn:hover { background: #00ff66; color: #000; border-color: #00ff66; box-shadow: 0 0 30px #00ff66; }
+        #ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); display: none; }
+        #crosshair::before, #crosshair::after { content: ""; position: absolute; background: var(--neon); }
+        #crosshair::before { top: 50%; left: 0; width: 100%; height: 2px; }
+        #crosshair::after { left: 50%; top: 0; width: 2px; height: 100%; }
 
-        #hud {
-            position: absolute; bottom: 40px; left: 40px; background: rgba(0, 0, 0, 0.9);
-            padding: 30px; border-left: 8px solid #00ff66; display: none; z-index: 100; min-width: 350px;
-        }
-        .hud-item { font-weight: 900; margin-bottom: 10px; font-size: 1.5em; text-transform: uppercase; }
-        .progress-bar { width: 100%; height: 12px; background: #222; margin-top: 15px; border-radius: 6px; overflow: hidden; }
-        #wave-progress { height: 100%; width: 0%; background: #00ff66; transition: width 0.3s; }
+        #hud { position: absolute; bottom: 50px; left: 50px; background: rgba(0,0,0,0.9); padding: 35px; border-left: 10px solid var(--neon); display: none; pointer-events: auto; width: 400px; clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%); }
+        .hud-stat { margin-bottom: 12px; }
+        .hud-label { font-size: 0.9em; color: #888; text-transform: uppercase; }
+        .hud-value { font-family: 'Orbitron'; font-size: 2.2em; font-weight: 900; display: block; }
 
-        .modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #0a0a0a; padding: 50px; border: 2px solid #333;
-            border-top: 6px solid #00ff66; display: none; z-index: 11000; min-width: 450px;
-            text-align: center;
-        }
+        .progress-container { width: 100%; height: 10px; background: #333; margin-top: 10px; border-radius: 5px; overflow: hidden; }
+        #wave-progress { height: 100%; width: 0%; background: var(--neon); transition: width 0.3s; }
+
+        .cyber-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(5,5,5,0.98); padding: 50px; border: 2px solid var(--neon); display: none; z-index: 10000; min-width: 500px; box-shadow: 0 0 100px #000; clip-path: polygon(0 0, 95% 0, 100% 5%, 100% 100%, 5% 100%, 0 95%); }
         .menu-active { display: block !important; }
-        #crosshair {
-            position: fixed; top: 50%; left: 50%; width: 24px; height: 24px;
-            border: 3px solid rgba(0, 255, 100, 0.8); border-radius: 50%;
-            transform: translate(-50%, -50%); display: none; pointer-events: none; z-index: 1000;
-        }
-        .sub-panel { display: none; flex-direction: column; width: 100%; }
-        .sub-panel.active { display: flex; }
-        input { width: 100%; padding: 18px; background: #000; border: 1px solid #333; color: #00ff66; margin-top: 20px; font-family: 'Orbitron'; text-align: center; font-size: 1.2em; }
+
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #333; outline: none; margin: 15px 0; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: var(--neon); border-radius: 50%; margin-top: -9px; border: 3px solid #000; }
+
+        .sub-panel { display: none; }
+        .sub-panel.active { display: block; }
+        .cyber-input { background: #111; border: 1px solid #333; color: var(--neon); padding: 20px; width: 100%; margin: 20px 0; font-size: 1.5em; text-align: center; font-family: 'Share Tech Mono'; outline: none; }
+        #settings-trigger { position: fixed; top: 40px; right: 40px; z-index: 1001; cursor: pointer; background: var(--zinc); padding: 15px; border: 1px solid var(--neon); display: flex; align-items: center; justify-content: center; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+        .back-link { color: #555; margin-top: 20px; cursor: pointer; display: block; text-transform: uppercase; font-size: 0.9em; }
+
+        .u-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #222; }
     </style>
 </head>
 <body>
+    <div id="notification" style="position:fixed; top:40px; left:50%; transform:translateX(-50%); background:var(--neon); color:#000; padding:15px 40px; font-weight:bold; z-index:11000; display:none;">SYSTEM CALIBRATED</div>
+
+    <div id="settings-trigger" onclick="toggleMenu('settings-menu')">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00ff66" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1V15a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </div>
+
+    <!-- START SCREEN -->
     <div id="main-menu">
-        <div class="menu-container" id="primary-panel">
+        <div class="menu-frame" id="primary-panel">
             <h1>SURVIVAL</h1>
-            <button class="btn" onclick="showSubPanel('sp-panel')">Singleplayer</button>
-            <button class="btn" onclick="showSubPanel('mp-panel')">Multiplayer</button>
-            <div style="margin-top:20px; color:#333;">SEED: <input type="text" id="seed-input" placeholder="AUTO" style="width:100px; background:none; border:none; color:#333; display:inline;"></div>
+            <button class="custom-btn" onclick="showSubPanel('sp-panel')">Singleplayer</button>
+            <button class="custom-btn" onclick="showSubPanel('mp-panel')">Multiplayer</button>
+            <div style="margin-top:20px; color:#333;">SEED: <input type="text" id="seed-input" placeholder="AUTO" style="width:80px; background:none; border:none; color:#333; text-align:center;"></div>
         </div>
-        <div class="menu-container sub-panel" id="sp-panel">
-            <button class="btn" onclick="startGame('sp', 'easy')">Easy</button>
-            <button class="btn" onclick="startGame('sp', 'normal')">Normal</button>
-            <button class="btn" onclick="startGame('sp', 'hard')">Hard</button>
-            <button class="btn" style="border:none; color:#555;" onclick="showSubPanel('primary-panel')">Back</button>
+
+        <div class="menu-frame sub-panel" id="sp-panel">
+            <h2 style="font-family: Orbitron; margin-bottom: 20px;">DIFFICULTY</h2>
+            <button class="custom-btn" onclick="startGame('sp', 'easy')">Easy</button>
+            <button class="custom-btn" onclick="startGame('sp', 'normal')">Normal</button>
+            <button class="custom-btn" onclick="startGame('sp', 'hard')">Hard</button>
+            <div class="back-link" onclick="showSubPanel('primary-panel')">Back</div>
         </div>
-        <div class="menu-container sub-panel" id="mp-panel">
-            <button class="btn" onclick="startGame('mp', 'main-room')">Join Public</button>
-            <button class="btn" onclick="showSubPanel('room-panel')">Custom Room</button>
-            <button class="btn" style="border:none; color:#555;" onclick="showSubPanel('primary-panel')">Back</button>
+
+        <div class="menu-frame sub-panel" id="mp-panel">
+            <h2 style="font-family: Orbitron; margin-bottom: 20px;">NETWORK LINK</h2>
+            <button class="custom-btn" onclick="startGame('mp', 'main-room')">Join Public</button>
+            <button class="custom-btn" onclick="showSubPanel('room-panel')">Custom Room</button>
+            <div class="back-link" onclick="showSubPanel('primary-panel')">Back</div>
         </div>
-        <div class="menu-container sub-panel" id="room-panel">
-            <input type="text" id="room-input" placeholder="ROOM NAME">
-            <button class="btn" onclick="joinCustomRoom()">Start</button>
-            <button class="btn" style="border:none; color:#555;" onclick="showSubPanel('mp-panel')">Back</button>
+
+        <div class="menu-frame sub-panel" id="room-panel">
+            <h2 style="font-family: Orbitron;">FREQUENCY ID</h2>
+            <input type="text" id="room-input" class="cyber-input" placeholder="ROOM-XYZ">
+            <button class="custom-btn" onclick="joinCustomRoom()">Establish</button>
+            <div class="back-link" onclick="showSubPanel('mp-panel')">Back</div>
         </div>
     </div>
 
-    <div id="hud">
-        <div class="hud-item">HP: <span id="hp" style="color:#ff4444;">100</span></div>
-        <div class="hud-item">PTS: <span id="points" style="color:#00ff66;">0</span></div>
-        <div class="hud-item">WAVE: <span id="wave">1</span></div>
-        <div class="hud-item">LEFT: <span id="enemies-left">0</span></div>
-        <div class="progress-bar"><div id="wave-progress"></div></div>
-    </div>
-    <div id="crosshair"></div>
+    <!-- HUD -->
+    <div id="ui-container"><div id="crosshair"></div><div id="hud">
+        <div class="hud-stat"><span class="hud-label">Vitals</span><span id="hp" class="hud-value" style="color: #ff4444;">100</span></div>
+        <div class="hud-stat"><span class="hud-label">Credits</span><span id="points" class="hud-value" style="color: var(--neon);">0</span></div>
+        <div class="hud-stat">
+            <span class="hud-label">Wave <span id="wave">1</span></span>
+            <span id="enemies-left" class="hud-value" style="font-size: 1.5em;">0 REMAINING</span>
+            <div class="progress-container"><div id="wave-progress"></div></div>
+        </div>
+        <div style="display:flex; gap: 10px; margin-top:25px;">
+            <button class="custom-btn" style="padding:10px; font-size:0.7em;" onclick="toggleMenu('shop-menu')">ARSENAL</button>
+            <button class="custom-btn" style="padding:10px; font-size:0.7em;" onclick="toggleMenu('room-menu')">ID LINK</button>
+        </div>
+    </div></div>
 
-    <div id="settings-menu" class="modal">
-        <h2 style="margin-bottom:30px; color:#00ff66;">SETTINGS</h2>
-        <input type="range" id="fov-slider" min="40" max="120" value="75">
-        <button class="btn" onclick="toggleMenu('settings-menu')">CLOSE</button>
+    <!-- MODALS -->
+    <div id="settings-menu" class="cyber-modal">
+        <h2 style="font-family: Orbitron; margin-bottom: 30px;">CONFIGURATION</h2>
+        <div class="setting-field"><span>Optics (FOV)</span><input type="range" id="fov-slider" min="40" max="120" value="75"></div>
+        <div class="setting-field"><span>Processing (Dist)</span><input type="range" id="dist-slider" min="1" max="100" value="50"></div>
+        <button class="custom-btn" id="perf-toggle" onclick="togglePerformance()">OPTIMIZATION: OFF</button>
+        <button class="custom-btn" style="margin-top:30px;" onclick="toggleMenu('settings-menu')">CLOSE</button>
     </div>
-    <div id="shop-menu" class="modal">
-        <h2 style="margin-bottom:30px;">SHOP</h2>
-        <button class="btn" onclick="buyItem('health', 300)">HEAL (300)</button>
-        <button class="btn" onclick="toggleMenu('shop-menu')">CLOSE</button>
+
+    <div id="shop-menu" class="cyber-modal">
+        <h2 style="font-family: Orbitron; margin-bottom: 20px;">BLACK MARKET</h2>
+        <div class="upgrade-terminal" id="shop-list" style="max-height: 400px; overflow-y: auto;">
+            <div class="u-item"><span>Knife (45 DMG)</span><button class="custom-btn" style="width: auto; padding: 10px;" onclick="buyItem('knife', 500)">500 CR</button></div>
+            <div class="u-item"><span>Pistol (60 DMG)</span><button class="custom-btn" style="width: auto; padding: 10px;" onclick="buyItem('pistol', 1500)">1500 CR</button></div>
+            <div class="u-item"><span>Medkit (Heal 50)</span><button class="custom-btn" style="width: auto; padding: 10px;" onclick="buyItem('health', 300)">300 CR</button></div>
+            <div class="u-item"><span>Max Vitals (+50)</span><button class="custom-btn" style="width: auto; padding: 10px;" onclick="buyItem('maxhp', 2000)">2000 CR</button></div>
+            <div class="u-item"><span>Reflex Link (+Speed)</span><button class="custom-btn" style="width: auto; padding: 10px;" onclick="buyItem('speed', 2500)">2500 CR</button></div>
+            <div class="u-item"><span>Neural Spike (+DMG)</span><button class="custom-btn" style="width: auto; padding: 10px;" onclick="buyItem('damage', 3000)">3000 CR</button></div>
+        </div>
+        <button class="custom-btn" onclick="toggleMenu('shop-menu')">EXIT</button>
+    </div>
+
+    <div id="room-menu" class="cyber-modal">
+        <h2 style="font-family: Orbitron;">FREQUENCY ID</h2>
+        <input type="text" id="switch-room-id" class="cyber-input" placeholder="NEW-ROOM">
+        <button class="custom-btn" onclick="switchRoom()">SYNC</button>
+        <button class="custom-btn" onclick="toggleMenu('room-menu')">CLOSE</button>
     </div>
 
     <script type="module" src="/src/client/main.js"></script>
     <script>
         function showSubPanel(id) {
-            document.querySelectorAll('.sub-panel, .menu-container').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
             document.getElementById('primary-panel').style.display = 'none';
             document.getElementById(id).classList.add('active');
             if(id === 'primary-panel') document.getElementById('primary-panel').style.display = 'block';
         }
         function toggleMenu(id) {
             const el = document.getElementById(id);
-            if(!el) return;
+            if (!el) return;
             const isOpening = !el.classList.contains('menu-active');
-            document.querySelectorAll('.modal').forEach(m => m.classList.remove('menu-active'));
+            document.querySelectorAll('.cyber-modal').forEach(m => m.classList.remove('menu-active'));
             if (isOpening) {
                 el.classList.add('menu-active');
-                if(window.unlockMouse) window.unlockMouse();
+                if (window.unlockMouse) window.unlockMouse();
             } else {
-                if(window.tryLockMouse) window.tryLockMouse();
+                if (window.tryLockMouse) window.tryLockMouse();
             }
         }
-        window.showSubPanel = showSubPanel; window.toggleMenu = toggleMenu;
+        function showNotification(text) {
+            const n = document.getElementById('notification');
+            n.innerText = text; n.style.display = 'block';
+            setTimeout(() => n.style.display = 'none', 3000);
+        }
+        window.showSubPanel = showSubPanel;
+        window.toggleMenu = toggleMenu;
+        window.showNotification = showNotification;
     </script>
 </body>
 </html>
