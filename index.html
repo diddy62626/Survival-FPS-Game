@@ -3,13 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survival FPS - React Edition</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>Survival FPS Multiplayer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Roboto', sans-serif;
+            color: #fff;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* ABSOLUTE CENTERING FOR MAIN MENU */
+        #main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.95)), url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000') center/cover;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+
+        .menu-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 15, 15, 0.98);
+            padding: 60px;
+            border: 1px solid #333;
+            border-top: 5px solid #00ff66;
+            box-shadow: 0 0 100px rgba(0,0,0,1);
+            width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4.5em;
+            color: #00ff66;
+            margin-bottom: 50px;
+            letter-spacing: 15px;
+            text-shadow: 0 0 30px rgba(0, 255, 106, 0.5);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            background: transparent;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.2em;
+        }
+
+        .btn:hover {
+            background: #00ff66;
+            color: #000;
+            border-color: #00ff66;
+            box-shadow: 0 0 40px rgba(0, 255, 106, 0.4);
+        }
+
+        #ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 14px; height: 14px; border: 2px solid rgba(0,255,100,0.8); border-radius: 50%; transform: translate(-50%, -50%); display: none; }
+        #hud { position: absolute; bottom: 40px; left: 40px; background: rgba(10, 10, 10, 0.95); padding: 30px; border-left: 5px solid #00ff66; display: none; pointer-events: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .hud-item { font-family: 'Orbitron'; font-weight: 700; margin-bottom: 8px; font-size: 1.3em; text-transform: uppercase; }
+
+        #settings-trigger { position: fixed; top: 30px; right: 30px; z-index: 1000; cursor: pointer; background: rgba(10, 10, 10, 0.9); padding: 15px; border-radius: 50%; border: 1px solid #333; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        #settings-trigger:hover { border-color: #00ff66; transform: rotate(45deg); box-shadow: 0 0 20px rgba(0,255,106,0.3); }
+
+        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10, 10, 10, 0.98); padding: 50px; border: 1px solid #333; border-top: 5px solid #00ff66; display: none; z-index: 10000; min-width: 450px; text-align: center; box-shadow: 0 0 150px rgba(0,0,0,1); }
+        .menu-active { display: block !important; }
+
+        .setting-row { margin: 35px 0; text-align: left; }
+        .setting-label { display: flex; justify-content: space-between; font-family: 'Orbitron'; font-size: 1em; margin-bottom: 12px; color: #aaa; letter-spacing: 1px; }
+        .setting-label span:last-child { color: #00ff66; font-weight: bold; }
+
+        input[type="range"] { -webkit-appearance: none; width: 100%; background: transparent; height: 30px; cursor: pointer; outline: none; }
+        input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 8px; background: #222; border-radius: 4px; border: 1px solid #333; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; background: #00ff66; border-radius: 50%; margin-top: -9px; border: 4px solid #050505; box-shadow: 0 0 15px rgba(0, 255, 106, 0.5); }
+        input[type="range"]::-moz-range-track { width: 100%; height: 8px; background: #222; border-radius: 4px; border: 1px solid #333; }
+        input[type="range"]::-moz-range-thumb { height: 20px; width: 20px; background: #00ff66; border-radius: 50%; border: 4px solid #050505; box-shadow: 0 0 15px rgba(0, 255, 106, 0.5); }
+        input[type="range"]::-moz-range-progress { background-color: #333; height: 8px; border-radius: 4px; }
+
+        .sub-menu { display: none; width: 100%; }
+        .sub-menu.active { display: flex; flex-direction: column; }
+        input[type="text"] { width: 100%; padding: 18px; background: #111; border: 1px solid #333; color: #fff; margin-top: 25px; font-family: 'Orbitron'; text-align: center; outline: none; font-size: 1.1em; }
+        input[type="text"]:focus { border-color: #00ff66; }
+
+        .notification { position: fixed; top: 30px; right: 100px; background: #00ff66; color: #000; padding: 20px 35px; font-weight: bold; font-family: 'Orbitron'; z-index: 11000; display: none; box-shadow: 0 0 30px rgba(0,255,106,0.4); border-radius: 4px; }
+    </style>
 </head>
 <body>
-    <div id="root" class="w-screen h-screen"></div>
-    <script type="module" src="/src/client/index.jsx"></script>
+    <div id="notification" class="notification">SAVED</div>
+
+    <div id="settings-trigger" onclick="toggleMenu('settings-menu')">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00ff66" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1V15a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </div>
+
+    <!-- MAIN MENU - ABSOLUTELY CENTERED -->
+    <div id="main-menu">
+        <div class="menu-content" id="primary-menu">
+            <h1>SURVIVAL</h1>
+            <button class="btn" onclick="showSubMenu('sp-menu')">Singleplayer</button>
+            <button class="btn" onclick="showSubMenu('mp-menu')">Multiplayer</button>
+        </div>
+
+        <div class="menu-content sub-menu" id="sp-menu">
+            <h2 style="font-family: Orbitron; margin-bottom: 25px; color: #888;">SELECT DIFFICULTY</h2>
+            <button class="btn" onclick="startGame('sp', 'easy')">Easy</button>
+            <button class="btn" onclick="startGame('sp', 'normal')">Normal</button>
+            <button class="btn" onclick="startGame('sp', 'hard')">Hard</button>
+            <button class="btn" style="border: none; color: #555; margin-top: 10px;" onclick="showSubMenu('primary-menu')">Back</button>
+        </div>
+
+        <div class="menu-content sub-menu" id="mp-menu">
+            <h2 style="font-family: Orbitron; margin-bottom: 25px; color: #888;">MULTIPLAYER</h2>
+            <button class="btn" onclick="startGame('mp', 'main-room')">Join Public</button>
+            <button class="btn" onclick="showSubMenu('custom-room-menu')">Custom Room</button>
+            <button class="btn" style="border: none; color: #555; margin-top: 10px;" onclick="showSubMenu('primary-menu')">Back</button>
+        </div>
+
+        <div class="menu-content sub-menu" id="custom-room-menu">
+            <h2 style="font-family: Orbitron; margin-bottom: 25px; color: #888;">ROOM NAME</h2>
+            <input type="text" id="room-input" placeholder="ENTER NAME...">
+            <button class="btn" onclick="joinCustomRoom()" style="margin-top: 30px;">Enter Battlefield</button>
+            <button class="btn" style="border: none; color: #555;" onclick="showSubMenu('mp-menu')">Back</button>
+        </div>
+    </div>
+
+    <div id="ui-container">
+        <div id="crosshair"></div>
+        <div id="hud">
+            <div class="hud-item">HP: <span id="hp" style="color: #ff4444;">100</span></div>
+            <div class="hud-item">POINTS: <span id="points" style="color: #00ff66;">0</span></div>
+            <div class="hud-item">WAVE: <span id="wave">1</span></div>
+            <div class="hud-item">WEAPON: <span id="weapon">Fist</span></div>
+            <div style="margin-top: 25px; display: flex; gap: 15px;">
+                <button class="btn" style="font-size: 0.8em; margin: 0; padding: 12px;" onclick="toggleMenu('shop-menu')">SHOP (B)</button>
+                <button class="btn" style="font-size: 0.8em; margin: 0; padding: 12px;" onclick="toggleMenu('room-menu')">ROOMS (M)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-menu" class="modal">
+        <h2 style="font-family: Orbitron; margin-bottom: 40px; color: #00ff66;">SYSTEM SETTINGS</h2>
+        <div class="setting-row">
+            <div class="setting-label"><span>Field of View</span><span id="fov-val">75</span></div>
+            <input type="range" id="fov-slider" min="40" max="120" value="75">
+        </div>
+        <div class="setting-row">
+            <div class="setting-label"><span>Render Distance</span><span id="dist-val">50</span></div>
+            <input type="range" id="dist-slider" min="1" max="100" value="50">
+        </div>
+        <div class="setting-row">
+            <button class="btn" id="perf-toggle" onclick="togglePerformance()" style="font-size: 0.9em; padding: 15px;">EXTREME OPTIMIZATION: OFF</button>
+        </div>
+        <button class="btn" onclick="toggleMenu('settings-menu')" style="background: #222; border: none; margin-top: 20px;">RESUME COMBAT</button>
+    </div>
+
+    <div id="shop-menu" class="modal">
+        <h2 style="font-family: Orbitron; margin-bottom: 30px;">ARSENAL</h2>
+        <div style="margin-bottom: 20px; padding: 20px; background: #0a0a0a; border: 1px solid #222;">
+            <h3>KNIFE</h3><button class="btn" style="font-size: 0.9em; margin-top: 10px;" onclick="buyItem('knife', 500)">BUY (500 pts)</button>
+        </div>
+        <div style="margin-bottom: 20px; padding: 20px; background: #0a0a0a; border: 1px solid #222;">
+            <h3>PISTOL</h3><button class="btn" style="font-size: 0.9em; margin-top: 10px;" onclick="buyItem('pistol', 1500)">BUY (1500 pts)</button>
+        </div>
+        <button class="btn" onclick="toggleMenu('shop-menu')">CLOSE</button>
+    </div>
+
+    <div id="room-menu" class="modal">
+        <h2 style="font-family: Orbitron; margin-bottom: 30px;">SWITCH ROOM</h2>
+        <input type="text" id="switch-room-id" placeholder="ROOM NAME...">
+        <button class="btn" onclick="switchRoom()" style="margin-top: 20px;">SWITCH</button>
+        <button class="btn" onclick="toggleMenu('room-menu')">CLOSE</button>
+    </div>
+
+    <script type="module" src="/src/client/main.js"></script>
+    <script>
+        function showSubMenu(id) {
+            document.querySelectorAll('.menu-content').forEach(p => {
+                p.classList.remove('active');
+                p.style.display = 'none';
+            });
+            const el = document.getElementById(id);
+            el.classList.add('active');
+            el.style.display = 'flex';
+        }
+        function toggleMenu(id) {
+            const el = document.getElementById(id);
+            const isOpening = !el.classList.contains('menu-active');
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('menu-active'));
+            if (isOpening) {
+                el.classList.add('menu-active');
+                if (window.unlockMouse) window.unlockMouse();
+            } else {
+                if (window.tryLockMouse) window.tryLockMouse();
+            }
+        }
+        function showNotification(text) {
+            const n = document.getElementById('notification');
+            n.innerText = text; n.style.display = 'block';
+            setTimeout(() => n.style.display = 'none', 3000);
+        }
+        window.showSubMenu = showSubMenu;
+        window.toggleMenu = toggleMenu;
+        window.showNotification = showNotification;
+        showSubMenu('primary-menu');
+    </script>
 </body>
 </html>
