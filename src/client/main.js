@@ -57,9 +57,8 @@ window.startGame = (mode, param) => {
     if (sInput) mapSeed = parseInt(sInput) || mapSeed;
     isMultiplayer = (mode === 'mp'); gameStarted = true;
     env.setSeed(mapSeed.toString());
-    const startY = env.getTerrainHeight(0, 0) + 5;
-    playerBody.position.set(0, startY, 0);
-    playerBody.velocity.set(0, 0, 0);
+    const startY = env.getTerrainHeight(0, 0) + 15;
+    playerBody.position.set(0, startY, 0); playerBody.velocity.set(0,0,0);
     env.updateChunks(playerBody.position);
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('hud').style.display = 'block';
@@ -214,7 +213,7 @@ window.onkeydown = (e) => {
     keys[e.code] = true;
     if (e.code === 'KeyB') window.toggleMenu('shop-menu');
     if (e.code === 'Tab') { e.preventDefault(); window.toggleMenu('settings-menu'); }
-    if (e.code === 'Escape') { window.unlockMouse(); }
+    if (e.code === 'Escape') { window.unlockMouse(); document.getElementById('main-menu').style.display = 'block'; document.getElementById('hud').style.display = 'none'; document.getElementById('crosshair').style.display = 'none'; window.showSubPanel('primary-panel'); }
 };
 window.onkeyup = (e) => keys[e.code] = false;
 
