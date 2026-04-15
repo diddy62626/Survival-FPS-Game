@@ -80,39 +80,43 @@
             transform: rotate(45deg);
         }
 
-        /* Main Menu Styling */
+        /* MAIN MENU - FULL SCREEN CENTERING */
         #main-menu {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)), url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000') center/cover;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.95)), url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000') center/cover;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 100;
+            z-index: 10000;
             transition: opacity 0.5s ease;
         }
 
         .menu-panel {
-            background: rgba(15, 15, 15, 0.95);
-            padding: 40px;
+            background: rgba(15, 15, 15, 0.98);
+            padding: 50px;
             border: 1px solid #333;
             border-top: 5px solid #00ff66;
-            width: 400px;
+            width: 450px;
             text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         h1 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3.5em;
-            margin-bottom: 40px;
+            font-size: 4em;
+            margin-bottom: 50px;
             color: #00ff66;
-            text-shadow: 0 0 15px rgba(0, 255, 106, 0.5);
-            letter-spacing: 5px;
+            text-shadow: 0 0 20px rgba(0, 255, 106, 0.4);
+            letter-spacing: 10px;
         }
 
         .btn {
@@ -120,25 +124,25 @@
             background: transparent;
             color: #fff;
             border: 1px solid #444;
-            padding: 12px 24px;
+            padding: 15px 30px;
             cursor: pointer;
-            margin: 10px;
+            margin: 12px 0;
             border-radius: 2px;
             font-weight: 700;
-            font-size: 0.9em;
+            font-size: 1em;
             font-family: 'Orbitron', sans-serif;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             transition: all 0.2s ease;
             width: 100%;
-            display: block;
+            box-sizing: border-box;
         }
 
         .btn:hover {
             background: #00ff66;
             color: #000;
             border-color: #00ff66;
-            box-shadow: 0 0 20px rgba(0, 255, 106, 0.4);
+            box-shadow: 0 0 25px rgba(0, 255, 106, 0.4);
         }
 
         #shop-menu, #room-menu, #settings-menu {
@@ -154,102 +158,40 @@
             pointer-events: auto;
             text-align: center;
             z-index: 1100;
-            min-width: 320px;
+            min-width: 350px;
         }
 
         .menu-active { display: block !important; }
 
-        input[type="text"], input[type="password"] {
-            padding: 12px;
+        input {
+            padding: 14px;
             border-radius: 2px;
             border: 1px solid #333;
             background: #111;
             color: #fff;
-            margin: 10px 0;
+            margin: 15px 0;
             width: 100%;
             box-sizing: border-box;
             font-family: 'Roboto', sans-serif;
             outline: none;
+            text-align: center;
         }
 
-        /* CUSTOM SLIDERS */
-        .setting-row {
-            margin: 30px 0;
-            text-align: left;
-        }
-        .setting-label {
-            display: flex;
-            justify-content: space-between;
-            font-family: 'Orbitron';
-            font-size: 0.85em;
-            margin-bottom: 12px;
-            color: #aaa;
-        }
-        .setting-label span:last-child {
-            color: #00ff66;
-        }
+        .setting-row { margin: 30px 0; text-align: left; }
+        .setting-label { display: flex; justify-content: space-between; font-family: 'Orbitron'; font-size: 0.9em; margin-bottom: 12px; color: #aaa; }
+        .setting-label span:last-child { color: #00ff66; }
 
-        input[type="range"] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-            cursor: pointer;
-            outline: none;
-            height: 24px;
-        }
+        input[type="range"] { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; height: 24px; outline: none; }
+        input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 8px; background: #222; border-radius: 4px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 22px; width: 22px; background: #00ff66; border-radius: 50%; margin-top: -7px; border: 3px solid #050505; }
 
-        input[type="range"]::-webkit-slider-runnable-track {
-            width: 100%; height: 6px; background: #222; border-radius: 3px; border: 1px solid #333;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 20px; width: 20px; background: #00ff66; border-radius: 50%;
-            border: 3px solid #050505; box-shadow: 0 0 10px rgba(0, 255, 106, 0.4); margin-top: -8px;
-            transition: all 0.1s ease;
-        }
-        input[type="range"]::-moz-range-track {
-            width: 100%; height: 6px; background: #222; border-radius: 3px; border: 1px solid #333;
-        }
-        input[type="range"]::-moz-range-thumb {
-            height: 18px; width: 18px; background: #00ff66; border-radius: 50%; border: 3px solid #050505;
-        }
-        input[type="range"]::-moz-range-progress { background-color: #333; height: 6px; border-radius: 3px; }
-
-        /* OPTIMIZATION BUTTON */
-        .opti-btn {
-            background: #222;
-            color: #888;
-            border: 1px solid #444;
-            padding: 12px;
-            width: 100%;
-            cursor: pointer;
-            font-family: 'Orbitron';
-            text-transform: uppercase;
-            font-size: 0.8em;
-            transition: all 0.2s;
-            margin-top: 5px;
-        }
-        .opti-btn.active {
-            background: #00ff66;
-            color: #000;
-            border-color: #00ff66;
-        }
+        .opti-btn { background: #222; color: #888; border: 1px solid #444; padding: 12px; width: 100%; cursor: pointer; font-family: 'Orbitron'; text-transform: uppercase; transition: 0.2s; }
+        .opti-btn.active { background: #00ff66; color: #000; border-color: #00ff66; }
 
         .sub-menu { display: none; width: 100%; }
-        .sub-menu.active { display: block; }
+        .sub-menu.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 80px;
-            background: #00ff66;
-            color: #000;
-            padding: 15px 25px;
-            font-weight: bold;
-            font-family: 'Orbitron', sans-serif;
-            border-radius: 2px;
-            display: none;
-            z-index: 1000;
-        }
+        .notification { position: fixed; top: 20px; right: 80px; background: #00ff66; color: #000; padding: 15px 25px; font-weight: bold; font-family: 'Orbitron'; border-radius: 2px; display: none; z-index: 1000; }
     </style>
 </head>
 <body>
@@ -259,7 +201,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff66" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1V15a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
-    <!-- MAIN DARK MENU -->
+    <!-- MAIN DARK MENU - CENTERED -->
     <div id="main-menu">
         <h1>SURVIVAL</h1>
 
@@ -269,26 +211,28 @@
         </div>
 
         <div class="menu-panel sub-menu" id="sp-menu">
+            <h2 style="font-family: Orbitron; color: #888;">SINGLEPLAYER</h2>
             <button class="btn" onclick="startGame('sp', 'easy')">Easy</button>
             <button class="btn" onclick="startGame('sp', 'normal')">Normal</button>
             <button class="btn" onclick="startGame('sp', 'hard')">Hard</button>
-            <button class="btn" style="border: none; color: #888;" onclick="showSubMenu('primary-menu')">Back</button>
+            <button class="btn" style="border: none; color: #666; font-size: 0.8em;" onclick="showSubMenu('primary-menu')">Back</button>
         </div>
 
         <div class="menu-panel sub-menu" id="mp-menu">
+            <h2 style="font-family: Orbitron; color: #888;">MULTIPLAYER</h2>
             <button class="btn" onclick="startGame('mp', 'main-room')">Join Public Room</button>
             <button class="btn" onclick="showSubMenu('custom-room-menu')">Custom Room</button>
-            <button class="btn" style="border: none; color: #888;" onclick="showSubMenu('primary-menu')">Back</button>
+            <button class="btn" style="border: none; color: #666; font-size: 0.8em;" onclick="showSubMenu('primary-menu')">Back</button>
         </div>
 
         <div class="menu-panel sub-menu" id="custom-room-menu">
+            <h2 style="font-family: Orbitron; color: #888;">ENTER ROOM</h2>
             <input type="text" id="room-input" placeholder="Room Name">
-            <button class="btn" onclick="joinCustomRoom()">Enter Room</button>
-            <button class="btn" style="border: none; color: #888;" onclick="showSubMenu('mp-menu')">Back</button>
+            <button class="btn" onclick="joinCustomRoom()">Start</button>
+            <button class="btn" style="border: none; color: #666; font-size: 0.8em;" onclick="showSubMenu('mp-menu')">Back</button>
         </div>
     </div>
 
-    <!-- HUD -->
     <div id="ui-container">
         <div id="crosshair"></div>
         <div id="hud">
@@ -303,7 +247,6 @@
         </div>
     </div>
 
-    <!-- SETTINGS MENU -->
     <div id="settings-menu">
         <h2 style="font-family: 'Orbitron';">SETTINGS</h2>
         <div class="setting-row">
@@ -317,7 +260,6 @@
         <div class="setting-row">
             <div class="setting-label"><span>EXTREME OPTIMIZATION</span></div>
             <button class="opti-btn" id="perf-toggle" onclick="togglePerformance()">OFF</button>
-            <p style="font-size: 0.6em; color: #666; margin-top: 8px;">For low-end devices: removes shadows, foliage, and lights.</p>
         </div>
         <button class="btn" onclick="toggleMenu('settings-menu')">CLOSE</button>
     </div>
@@ -337,7 +279,7 @@
     </div>
 
     <div id="room-menu">
-        <h2 style="font-family: 'Orbitron';">SWITCH ROOM</h2>
+        <h2 style="font-family: 'Orbitron';">ROOMS</h2>
         <input type="text" id="switch-room-id" placeholder="Room Name">
         <button class="btn" onclick="switchRoom()">SWITCH</button>
         <button class="btn" onclick="toggleMenu('room-menu')">CLOSE</button>
@@ -348,16 +290,13 @@
         function showSubMenu(id) {
             document.querySelectorAll('.menu-panel').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            document.getElementById('primary-menu').style.display = (id === 'primary-menu') ? 'block' : 'none';
+            document.getElementById('primary-menu').style.display = (id === 'primary-menu') ? 'flex' : 'none';
         }
         function toggleMenu(id) {
             const el = document.getElementById(id);
             const isOpening = !el.classList.contains('menu-active');
             document.querySelectorAll('#shop-menu, #room-menu, #settings-menu').forEach(m => m.classList.remove('menu-active'));
-            if (isOpening) {
-                el.classList.add('menu-active');
-                document.exitPointerLock();
-            }
+            if (isOpening) { el.classList.add('menu-active'); document.exitPointerLock(); }
         }
         function showNotification(text) {
             const n = document.getElementById('notification');
@@ -367,6 +306,7 @@
         window.showSubMenu = showSubMenu;
         window.toggleMenu = toggleMenu;
         window.showNotification = showNotification;
+        showSubMenu('primary-menu'); // Initial state
     </script>
 </body>
 </html>
