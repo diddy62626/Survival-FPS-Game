@@ -57,6 +57,9 @@ window.startGame = (mode, param) => {
     if (sInput) mapSeed = parseInt(sInput) || mapSeed;
     isMultiplayer = (mode === 'mp'); gameStarted = true;
     env.setSeed(mapSeed.toString());
+    const startY = env.getTerrainHeight(0, 0) + 5;
+    playerBody.position.set(0, startY, 0);
+    playerBody.velocity.set(0, 0, 0);
     env.updateChunks(playerBody.position);
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('hud').style.display = 'block';
@@ -80,7 +83,7 @@ function spawnEnemy() {
     const angle = Math.random() * Math.PI * 2; const dist = 80;
     const data = {
         id,
-        pos: { x: Math.cos(angle)*dist, y: 10, z: Math.sin(angle)*dist },
+        pos: { x: Math.cos(angle)*dist, y: env.getTerrainHeight(Math.cos(angle)*dist, Math.sin(angle)*dist) + 0.1, z: Math.sin(angle)*dist },
         hp: 50 + wave * 25,
         maxHp: 50 + wave * 25,
         speed: 0.08 + Math.random() * 0.05,
@@ -92,18 +95,18 @@ function spawnEnemy() {
     // DETAILED ENEMY MODEL
     const g = new THREE.Group();
     const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1.5, 4, 8), new THREE.MeshStandardMaterial({color: data.color}));
-    body.position.y = 1; body.castShadow = true; g.add(body);
+    body.position.y = 1.25; body.castShadow = true; g.add(body);
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), new THREE.MeshStandardMaterial({color: data.color}));
-    head.position.y = 2.2; head.castShadow = true; g.add(head);
+    head.position.y = 2.45; head.castShadow = true; g.add(head);
 
     // Billboard HP Bar
     const hbGroup = new THREE.Group();
     const hbBg = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.15), new THREE.MeshBasicMaterial({color: 0x000000}));
     const hbFg = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.15), new THREE.MeshBasicMaterial({color: 0x00ff00}));
-    hbFg.position.z = 0.01; hbGroup.add(hbBg, hbFg); hbGroup.position.y = 3.2; g.add(hbGroup);
+    hbFg.position.z = 0.01; hbGroup.add(hbBg, hbFg); hbGroup.position.y = 3.5; g.add(hbGroup);
     g.hpBar = hbFg; g.hbGroup = hbGroup;
 
-    g.position.set(data.pos.x, 20, data.pos.z); g.userData = data; g.zombieId = id;
+    g.position.set(data.pos.x, data.pos.y, data.pos.z); g.userData = data; g.zombieId = id;
     scene.add(g); zombies.set(id, g);
 }
 
@@ -138,7 +141,7 @@ function attack() {
             const dmg = w.damage * damageMult;
             obj.userData.hp -= dmg;
             particles.createExplosion(intersects[0].point, 0x880000, 15);
-            fx.spawnText(intersects[0].point, Math.floor(dmg), '#ff0000', '💥');
+            fx.spawnText(intersects[0].point, Math.floor(dmg), '#ff0000', 'damage');
 
             const pct = obj.userData.hp / obj.userData.maxHp;
             obj.hpBar.scale.x = Math.max(0, pct);
@@ -146,7 +149,7 @@ function attack() {
 
             if (obj.userData.hp <= 0) {
                 myPoints += obj.userData.gold; enemiesKilledInWave++; enemiesRemaining--;
-                fx.spawnText(obj.position, "+" + obj.userData.gold, '#00ccff', '💎');
+                fx.spawnText(obj.position, "+" + obj.userData.gold, '#00ccff', 'gold');
                 scene.remove(obj); zombies.delete(obj.zombieId);
                 updateHUD();
                 if (enemiesRemaining <= 0) setTimeout(() => startWave(wave + 1), 3000);
