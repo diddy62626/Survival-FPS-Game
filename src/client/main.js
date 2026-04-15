@@ -69,7 +69,7 @@ const ground = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.Mes
 ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
 world.addBody(new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane(), quaternion: new CANNON.Quaternion().setFromEuler(-Math.PI/2, 0, 0) }));
 
-const playerBody = new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.6), position: new CANNON.Vec3(0, 5, 0), fixedRotation: true, linearDamping: 0.9 });
+const playerBody = new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.6), position: new CANNON.Vec3(0, 20, 0), fixedRotation: true, linearDamping: 0.9 });
 world.addBody(playerBody);
 
 const otherPlayers = new Map(); const zombies = new Map();
