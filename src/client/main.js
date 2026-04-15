@@ -15,6 +15,7 @@ let canAttack = true;
 let wave = 1;
 let roomName = 'main-room';
 let isPerformanceMode = false;
+let gameStarted = false;
 
 const weapons = {
     1: { name: 'Fist', range: 2.5, damage: 15, cooldown: 400, owned: true },
@@ -39,6 +40,24 @@ const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
 const particles = new ParticleSystem(scene);
 const env = new EnvironmentManager(scene, world);
 
+// Global Toggle Menu with Pointer Lock Support
+window.toggleMenu = (id) => {
+    const el = document.getElementById(id);
+    const isOpening = !el.classList.contains('menu-active');
+
+    // Close all menus
+    ['shop-menu', 'room-menu', 'settings-menu'].forEach(mId => {
+        document.getElementById(mId).classList.remove('menu-active');
+    });
+
+    if (isOpening) {
+        el.classList.add('menu-active');
+        controls.unlock();
+    } else {
+        if (gameStarted) controls.lock();
+    }
+};
+
 // Performance Mode
 window.togglePerformance = () => {
     isPerformanceMode = !isPerformanceMode;
@@ -49,9 +68,7 @@ window.togglePerformance = () => {
     env.setPerformanceMode(isPerformanceMode);
     if (isPerformanceMode) { scene.fog.density = 0.04; renderer.setPixelRatio(0.8); }
     else { scene.fog.density = 0.015; renderer.setPixelRatio(window.devicePixelRatio); }
-    if (document.getElementById('main-menu').style.display === 'none') {
-        env.generateCity(isMultiplayer ? roomName : 'offline-city');
-    }
+    if (gameStarted) env.generateCity(isMultiplayer ? roomName : 'offline-city');
 };
 
 // Settings
@@ -72,6 +89,7 @@ const controls = new PointerLockControls(camera, document.body);
 
 window.startGame = (mode, param) => {
     isMultiplayer = (mode === 'mp');
+    gameStarted = true;
     if (isMultiplayer) connect(param);
     else { env.generateCity('offline-city'); startWaveLocal(1); }
     document.getElementById('main-menu').style.display = 'none';
@@ -85,13 +103,14 @@ window.joinCustomRoom = () => {
 
 window.switchRoom = () => {
     const room = document.getElementById('switch-room-id').value;
-    if (room) { connect(room); window.toggleMenu('room-menu'); controls.lock(); }
+    if (room) { connect(room); window.toggleMenu('room-menu'); }
 };
 
 controls.addEventListener('lock', () => {
     document.getElementById('hud').style.display = 'block';
     document.getElementById('crosshair').style.display = 'block';
 });
+
 controls.addEventListener('unlock', () => {
     const menus = ['shop-menu', 'room-menu', 'settings-menu'];
     if (!menus.some(id => document.getElementById(id).classList.contains('menu-active'))) {
@@ -112,7 +131,7 @@ function connect(room) {
     env.generateCity(room);
 }
 
-// Lighting & Player
+// Lighting & World
 scene.add(new THREE.AmbientLight(0x404040, 2.5));
 const sun = new THREE.DirectionalLight(0xffffff, 1.2);
 sun.position.set(50, 200, 50); sun.castShadow = true;
@@ -206,8 +225,13 @@ window.onkeydown = (e) => {
     if (e.code === 'ShiftLeft') move.s = 2.4;
     if (e.code.startsWith('Digit')) { const id = parseInt(e.code.slice(-1)); if (weapons[id]?.owned) { currentWeapon = id; document.getElementById('weapon').innerText = weapons[id].name; } }
     if (e.code === 'Space' && Math.abs(playerBody.velocity.y) < 0.1) playerBody.velocity.y = 5.8;
-    if (e.code === 'KeyB') window.toggleMenu('shop-menu'); if (e.code === 'KeyM') window.toggleMenu('room-menu');
-    if (e.code === 'Tab') { e.preventDefault(); window.toggleMenu('settings-menu'); }
+
+    if (e.code === 'KeyB') window.toggleMenu('shop-menu');
+    if (e.code === 'KeyM') window.toggleMenu('room-menu');
+    if (e.code === 'Tab') {
+        e.preventDefault();
+        window.toggleMenu('settings-menu');
+    }
 };
 window.onkeyup = (e) => {
     if (e.code === 'KeyW') move.f = 0; if (e.code === 'KeyS') move.b = 0; if (e.code === 'KeyA') move.l = 0; if (e.code === 'KeyD') move.r = 0; if (e.code === 'ShiftLeft') move.s = 1;
