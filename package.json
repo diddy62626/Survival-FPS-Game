@@ -10,14 +10,25 @@
     "pk-deploy": "partykit deploy src/server/index.ts"
   },
   "dependencies": {
+    "@react-three/cannon": "^6.6.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "cannon-es": "^0.20.0",
     "gsap": "^3.12.5",
+    "lucide-react": "^1.8.0",
     "partykit": "^0.0.115",
+    "partysocket": "^1.0.2",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "three": "^0.170.0",
-    "yuka": "^0.7.8",
-    "partysocket": "^1.0.2"
+    "yuka": "^0.7.8"
   },
   "devDependencies": {
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.9",
+    "tailwindcss": "^4.2.2",
     "vite": "^5.0.0"
   }
 }
