@@ -5,13 +5,14 @@ import GSAP from 'gsap';
 import PartySocket from 'partysocket';
 import { ParticleSystem } from './particles.js';
 import { EnvironmentManager } from './environment.js';
+import { UIEffectsManager } from './ui_effects.js';
 
 let isMultiplayer = false, myPoints = 0, myHP = 100, currentWeapon = 1, canAttack = true, wave = 1, roomName = 'main-room', isPerformanceMode = false, gameStarted = false;
 
 const weapons = { 1: { name: 'Fist', range: 2.5, damage: 15, cooldown: 400, owned: true }, 2: { name: 'Knife', range: 3.5, damage: 45, cooldown: 300, owned: false }, 3: { name: 'Pistol', range: 100, damage: 60, cooldown: 500, owned: false } };
 
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x050505);
-const fog = new THREE.FogExp2(0x050505, 0.015); scene.fog = fog;
+const fog = new THREE.FogExp2(0x050505, 0.01); scene.fog = fog;
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio);
@@ -20,6 +21,7 @@ renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement
 const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
 const particles = new ParticleSystem(scene);
 const env = new EnvironmentManager(scene, world);
+const fx = new UIEffectsManager(scene, camera);
 const controls = new PointerLockControls(camera, document.body);
 
 window.tryLockMouse = () => { if (gameStarted) controls.lock(); };
@@ -65,9 +67,6 @@ function connect(room) {
 
 scene.add(new THREE.AmbientLight(0x404040, 2.5));
 const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(50, 200, 50); sun.castShadow = true; scene.add(sun);
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
-world.addBody(new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane(), quaternion: new CANNON.Quaternion().setFromEuler(-Math.PI/2, 0, 0) }));
 
 const playerBody = new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.6), position: new CANNON.Vec3(0, 20, 0), fixedRotation: true, linearDamping: 0.9 });
 world.addBody(playerBody);
@@ -90,8 +89,11 @@ function attack() {
         let obj = intersects[0].object; while(obj.parent && !obj.zombieId) obj = obj.parent;
         if (obj.zombieId) {
             particles.createExplosion(intersects[0].point, 0x880000, 15);
+            // Spawn Damage Text
+            fx.spawnText(intersects[0].point, w.damage, '#ff0000', '💥');
+
             if (isMultiplayer && socket) socket.send(JSON.stringify({ type: 'hitZombie', zombieId: obj.zombieId, damage: w.damage }));
-            else damageZombieLocal(obj.zombieId, w.damage);
+            else damageZombieLocal(obj.zombieId, w.damage, intersects[0].point);
         }
     }
     setTimeout(() => canAttack = true, w.cooldown);
@@ -109,7 +111,14 @@ function setupSocket() {
         if (data.type === 'zombieSpawn' || data.type === 'zombieSync') { (data.zombies || [data.zombie]).forEach(spawnZombieClient); }
         if (data.type === 'zombieUpdate') { data.zombies.forEach(zData => { const z = zombies.get(zData.id); if (z) { z.position.lerp(new THREE.Vector3(zData.pos.x, zData.pos.y, zData.pos.z), 0.15); z.lookAt(playerBody.position.x, 0, playerBody.position.z); } }); }
         if (data.type === 'damagePlayer') { myHP -= data.amount; document.getElementById('hp').innerText = Math.max(0, Math.floor(myHP)); if (myHP <= 0) { alert("YOU DIED!"); location.reload(); } }
-        if (data.type === 'zombieDeath') { const z = zombies.get(data.id); if (z) { scene.remove(z); zombies.delete(data.id); } if (data.killerId === socket.id) { myPoints += 100; document.getElementById('points').innerText = myPoints; } }
+        if (data.type === 'zombieDeath') {
+            const z = zombies.get(data.id);
+            if (z) {
+                fx.spawnText(z.position, '+100', '#00ccff', '💎');
+                scene.remove(z); zombies.delete(data.id);
+            }
+            if (data.killerId === socket.id) { myPoints += 100; document.getElementById('points').innerText = myPoints; }
+        }
         if (data.type === 'playerLeft') { const p = otherPlayers.get(data.id); if(p) scene.remove(p); otherPlayers.delete(data.id); }
     };
 }
@@ -123,9 +132,17 @@ function spawnZombieClient(zData) {
     scene.add(g); zombies.set(zData.id, g);
 }
 
-function damageZombieLocal(id, dmg) {
+function damageZombieLocal(id, dmg, hitPoint) {
     const z = zombies.get(id);
-    if (z) { z.hp = (z.hp || 50) - dmg; if (z.hp <= 0) { scene.remove(z); zombies.delete(id); myPoints += 100; document.getElementById('points').innerText = myPoints; if (zombies.size === 0) startWaveLocal(wave + 1); } }
+    if (z) {
+        z.hp = (z.hp || 50) - dmg;
+        if (z.hp <= 0) {
+            fx.spawnText(hitPoint || z.position, '+100', '#00ccff', '💎');
+            scene.remove(z); zombies.delete(id); myPoints += 100;
+            document.getElementById('points').innerText = myPoints;
+            if (zombies.size === 0) startWaveLocal(wave + 1);
+        }
+    }
 }
 function startWaveLocal(w) {
     wave = w; document.getElementById('wave').innerText = wave;
@@ -158,7 +175,7 @@ window.onkeyup = (e) => {
 
 function loop() {
     requestAnimationFrame(loop);
-    world.fixedStep(); particles.update(0.016);
+    world.fixedStep(); particles.update(0.016); fx.update();
     if (controls.isLocked && myHP > 0) {
         const speed = 7.5 * move.s;
         const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); const rgt = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
@@ -167,13 +184,23 @@ function loop() {
         if (vel.length() > 0) { vel.normalize().multiplyScalar(speed); playerBody.velocity.x = vel.x; playerBody.velocity.z = vel.z; }
         else { playerBody.velocity.x *= 0.85; playerBody.velocity.z *= 0.85; }
         if (isMultiplayer && socket) socket.send(JSON.stringify({ type: 'move', pos: playerBody.position, rot: camera.quaternion }));
+
+        // Terrian floor snapping / walking
+        const terrainY = env.getTerrainHeight(playerBody.position.x, playerBody.position.z);
+        if (playerBody.position.y < terrainY + 1.2) {
+            playerBody.position.y = terrainY + 1.2;
+            playerBody.velocity.y = Math.max(0, playerBody.velocity.y);
+        }
+
         if (!isMultiplayer) {
             zombies.forEach((zMesh) => {
                 const dist = zMesh.position.distanceTo(playerBody.position);
+                const zTerrainY = env.getTerrainHeight(zMesh.position.x, zMesh.position.z);
+                zMesh.position.y = zTerrainY;
                 if (dist < 60) {
                     const dir = new THREE.Vector3().subVectors(playerBody.position, zMesh.position).normalize();
-                    zMesh.position.addScaledVector(dir, 0.06); zMesh.lookAt(playerBody.position.x, 0, playerBody.position.z);
-                    if (dist < 1.4 && Math.random() < 0.015) { myHP -= 0.8; document.getElementById('hp').innerText = Math.max(0, Math.floor(myHP)); if (myHP <= 0) { alert("YOU DIED!"); location.reload(); } }
+                    zMesh.position.addScaledVector(dir, 0.06); zMesh.lookAt(playerBody.position.x, zMesh.position.y, playerBody.position.z);
+                    if (dist < 1.8 && Math.random() < 0.015) { myHP -= 0.8; document.getElementById('hp').innerText = Math.max(0, Math.floor(myHP)); if (myHP <= 0) { alert("YOU DIED!"); location.reload(); } }
                 }
             });
         }
