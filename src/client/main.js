@@ -6,6 +6,7 @@ import PartySocket from 'partysocket';
 import { ParticleSystem } from './particles.js';
 import { EnvironmentManager } from './environment.js';
 import { UIEffectsManager } from './ui_effects.js';
+import { EnemyFactory } from './enemy_factory.js';
 
 let isMultiplayer = false, myPoints = 0, myHP = 100, maxHP = 100, currentWeapon = 1, canAttack = true, wave = 1;
 let enemiesRemaining = 0, totalEnemiesInWave = 0, enemiesKilledInWave = 0;
@@ -36,8 +37,12 @@ const gunMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.2, 0.7), new THREE.
 gunMesh.position.set(0.4, -0.4, -0.6);
 viewmodel.add(gunMesh);
 camera.add(viewmodel); scene.add(camera);
+const viewLight = new THREE.PointLight(0x00ffcc, 1, 5);
+viewLight.position.set(0.5, -0.2, -0.5);
+viewmodel.add(viewLight);
 
 const particles = new ParticleSystem(scene);
+const enemyFactory = new EnemyFactory();
 const env = new EnvironmentManager(scene, world);
 const fx = new UIEffectsManager(scene, camera);
 const controls = new PointerLockControls(camera, document.body);
@@ -80,8 +85,10 @@ const zombies = new Map();
 function spawnEnemy() {
     const id = 'z_' + Math.random();
     const angle = Math.random() * Math.PI * 2; const dist = 80;
+    const types = ["scout", "brute", "stalker", "spiker", "tank"];
+    const type = types[Math.floor(Math.random() * types.length)];
     const data = {
-        id,
+        id, type,
         pos: { x: Math.cos(angle)*dist, y: env.getTerrainHeight(Math.cos(angle)*dist, Math.sin(angle)*dist) + 0.1, z: Math.sin(angle)*dist },
         hp: 50 + wave * 25,
         maxHp: 50 + wave * 25,
@@ -91,18 +98,12 @@ function spawnEnemy() {
         color: new THREE.Color().setHSL(Math.random(), 0.7, 0.4).getHex()
     };
 
-    // DETAILED ENEMY MODEL
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1.5, 4, 8), new THREE.MeshStandardMaterial({color: data.color}));
-    body.position.y = 1.25; body.castShadow = true; g.add(body);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), new THREE.MeshStandardMaterial({color: data.color}));
-    head.position.y = 2.45; head.castShadow = true; g.add(head);
+    const g = enemyFactory.createEnemyGroup(type, data);
 
-    // Billboard HP Bar
     const hbGroup = new THREE.Group();
     const hbBg = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.15), new THREE.MeshBasicMaterial({color: 0x000000}));
     const hbFg = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.15), new THREE.MeshBasicMaterial({color: 0x00ff00}));
-    hbFg.position.z = 0.01; hbGroup.add(hbBg, hbFg); hbGroup.position.y = 3.5; g.add(hbGroup);
+    hbFg.position.z = 0.01; hbGroup.add(hbBg, hbFg); hbGroup.position.y = (g.userData.height || 2) + 0.5; g.add(hbGroup);
     g.hpBar = hbFg; g.hbGroup = hbGroup;
 
     g.position.set(data.pos.x, data.pos.y, data.pos.z); g.userData = data; g.zombieId = id;
@@ -125,7 +126,6 @@ function attack() {
     if (!canAttack || myHP <= 0 || physicsPaused) return;
     canAttack = false; const w = weapons[currentWeapon];
 
-    // ATTACK ANIMATION
     GSAP.to(viewmodel.position, { z: 0.2, duration: 0.1, yoyo: true, repeat: 1 });
     GSAP.to(viewmodel.rotation, { x: -0.2, duration: 0.1, yoyo: true, repeat: 1 });
 
@@ -217,6 +217,12 @@ window.onkeydown = (e) => {
 };
 window.onkeyup = (e) => keys[e.code] = false;
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(50, 100, 50);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+scene.add(dirLight);
 loop();
 window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
