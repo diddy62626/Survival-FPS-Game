@@ -30,6 +30,8 @@ document.body.appendChild(renderer.domElement);
 
 const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -25, 0) });
 const playerBody = new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(0.6), position: new CANNON.Vec3(0, 50, 0), fixedRotation: true, linearDamping: 0.95 });
+let canJump = false;
+playerBody.addEventListener("collide", (e) => { canJump = true; });
 world.addBody(playerBody);
 
 const viewmodel = new THREE.Group();
@@ -182,6 +184,7 @@ function loop() {
             let vx = 0, vz = 0;
             if (keys['KeyW']) { vx += fwd.x; vz += fwd.z; } if (keys['KeyS']) { vx -= fwd.x; vz -= fwd.z; }
             if (keys['KeyA']) { vx -= rgt.x; vz -= rgt.z; } if (keys['KeyD']) { vx += rgt.x; vz += rgt.z; }
+            if (keys['Space'] && canJump) { playerBody.velocity.y = 12; canJump = false; }
             const mag = Math.sqrt(vx*vx + vz*vz);
             if(mag > 0) {
                 playerBody.velocity.x = (vx/mag) * moveSpeed;

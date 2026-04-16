@@ -62,7 +62,7 @@ export class EnvironmentManager {
         }
         geo.computeVertexNormals();
 
-        const mesh = new THREE.Mesh(geo, this.mats.dirt);
+        const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x221a10, roughness: 1, side: THREE.DoubleSide }));
         mesh.rotation.x = -Math.PI/2;
         mesh.position.set(worldX + size/2, 0, worldZ + size/2);
         mesh.receiveShadow = true;
