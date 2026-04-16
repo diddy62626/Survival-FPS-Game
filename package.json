@@ -10,14 +10,21 @@
     "pk-deploy": "partykit deploy src/server/index.ts"
   },
   "dependencies": {
+    "@react-three/cannon": "^6.6.0",
+    "@react-three/drei": "^9.121.1",
+    "@react-three/fiber": "^8.17.10",
     "cannon-es": "^0.20.0",
     "gsap": "^3.12.5",
     "partykit": "^0.0.115",
+    "partysocket": "^1.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "three": "^0.170.0",
     "yuka": "^0.7.8",
-    "partysocket": "^1.0.2"
+    "zustand": "^4.5.5"
   },
   "devDependencies": {
-    "vite": "^5.0.0"
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
   }
 }
