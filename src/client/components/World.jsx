@@ -9,7 +9,7 @@ export default function World() {
 
   const chunks = useMemo(() => {
     const list = [];
-    const range = 2;
+    const range = 3; // Increased range for better visibility
     const size = 32;
     for (let i = -range; i <= range; i++) {
       for (let j = -range; j <= range; j++) {

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useHeightfield } from '@react-three/cannon';
 import { useTexture } from '@react-three/drei';
@@ -7,12 +7,10 @@ import { createNoise } from '../utils/noise';
 const CHUNK_SIZE = 32;
 const RESOLUTION = 32;
 
-// Use React.memo for static chunks
 export const TerrainChunk = React.memo(({ x, z, seed }) => {
   const noise = useMemo(() => createNoise(seed), [seed]);
-
-  // Memoize texture to avoid re-loads
   const texture = useTexture('/assets/textures/dirt.png');
+
   const material = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({ map: texture, roughness: 1 });
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -28,19 +26,27 @@ export const TerrainChunk = React.memo(({ x, z, seed }) => {
     for (let i = 0; i <= RESOLUTION; i++) {
       matrix[i] = [];
       for (let j = 0; j <= RESOLUTION; j++) {
-        const vx = (i / RESOLUTION - 0.5) * CHUNK_SIZE + x;
-        const vz = (j / RESOLUTION - 0.5) * CHUNK_SIZE + z;
+        // Global coordinates for noise
+        const gx = (i / RESOLUTION - 0.5) * CHUNK_SIZE + x;
+        const gz = (j / RESOLUTION - 0.5) * CHUNK_SIZE + z;
 
-        const h = (noise(vx * 0.05, vz * 0.05) * 10) +
-                  (noise(vx * 0.1, vz * 0.1) * 2);
+        // Local coordinates for vertices
+        const lx = (i / RESOLUTION - 0.5) * CHUNK_SIZE;
+        const lz = (j / RESOLUTION - 0.5) * CHUNK_SIZE;
 
-        const roadFactor = Math.exp(-Math.pow(vx * 0.2, 2));
+        const h = (noise(gx * 0.05, gz * 0.05) * 10) +
+                  (noise(gx * 0.1, gz * 0.1) * 2);
+
+        const roadFactor = Math.exp(-Math.pow(gx * 0.2, 2));
         const finalH = h * (1 - roadFactor);
 
-        vertices[(i * (RESOLUTION + 1) + j) * 3] = vx;
+        vertices[(i * (RESOLUTION + 1) + j) * 3] = lx;
         vertices[(i * (RESOLUTION + 1) + j) * 3 + 1] = finalH;
-        vertices[(i * (RESOLUTION + 1) + j) * 3 + 2] = vz;
+        vertices[(i * (RESOLUTION + 1) + j) * 3 + 2] = lz;
 
+        // Cannon heightfield matrix needs to be [i][j] where i is x and j is z
+        // But Cannon Heightfield is indexed differently.
+        // We'll pass it a flat 2D array and adjust body position.
         matrix[i][j] = finalH;
       }
     }
@@ -59,15 +65,24 @@ export const TerrainChunk = React.memo(({ x, z, seed }) => {
     return { vertices, matrix, indices: new Uint16Array(indices) };
   }, [x, z, noise]);
 
+  // Heightfield in Cannon starts at min X, min Z and grows in +X, +Y (local)
+  // Our vertices are centered around (0,0) locally.
   const [ref] = useHeightfield(() => ({
     args: [matrix, { elementSize: CHUNK_SIZE / RESOLUTION }],
     position: [x - CHUNK_SIZE / 2, 0, z + CHUNK_SIZE / 2],
     rotation: [-Math.PI / 2, 0, 0],
   }), useRef());
 
+  const geomRef = useRef();
+  useEffect(() => {
+    if (geomRef.current) {
+        geomRef.current.computeVertexNormals();
+    }
+  }, [vertices]);
+
   return (
     <mesh ref={ref} receiveShadow material={material}>
-      <bufferGeometry>
+      <bufferGeometry ref={geomRef}>
         <bufferAttribute
           attach="attributes-position"
           count={vertices.length / 3}
