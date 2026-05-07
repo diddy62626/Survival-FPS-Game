@@ -9,49 +9,43 @@ export default function Atmosphere() {
   const ambientRef = useRef();
   const setTime = useGameStore((state) => state.setTime);
 
-  const dayDuration = 300;
-
   useFrame((state) => {
-    const time = (state.clock.elapsedTime % dayDuration) / dayDuration;
+    // 0.48 is a nice late afternoon/sunset where things are still visible
+    const time = 0.48;
     setTime(time);
 
     const angle = time * Math.PI * 2;
-    // Ensure sun is always above 0 during day for better light
-    const sunY = Math.sin(angle) * 100;
-    const sunPos = [
-      Math.cos(angle) * 100,
-      sunY,
-      Math.sin(angle * 0.5) * 50
-    ];
+    const sunX = Math.cos(angle) * 200;
+    const sunY = Math.sin(angle) * 200;
+    const sunZ = 50;
 
     if (sunRef.current) {
-      sunRef.current.position.set(...sunPos);
-      const intensity = Math.max(0.1, Math.sin(angle) * 1.5);
-      sunRef.current.intensity = intensity;
-    }
-
-    if (ambientRef.current) {
-      // Brighter ambient so silhouettes aren't pitch black
-      const ambientIntensity = Math.max(0.3, Math.sin(angle) * 0.4 + 0.4);
-      ambientRef.current.intensity = ambientIntensity;
+      sunRef.current.position.set(sunX, sunY, sunZ);
+      sunRef.current.intensity = 2.0;
     }
   });
 
   return (
     <>
-      <Sky sunPosition={[100, 20, 100]} turbidity={0.1} rayleigh={0.5} />
-      <Stars radius={300} depth={60} count={10000} factor={7} saturation={0} fade speed={1} />
+      <Sky
+        sunPosition={[100, 10, 50]}
+        turbidity={8}
+        rayleigh={6}
+        mieCoefficient={0.005}
+        mieDirectionalG={0.8}
+      />
+      <Stars radius={300} depth={60} count={10000} factor={4} saturation={0} fade speed={1} />
       <directionalLight
         ref={sunRef}
         castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-left={-50}
-        shadow-camera-right={50}
-        shadow-camera-top={50}
-        shadow-camera-bottom={-50}
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-100}
+        shadow-camera-right={100}
+        shadow-camera-top={100}
+        shadow-camera-bottom={-100}
       />
-      <ambientLight ref={ambientRef} />
-      <fog attach="fog" args={['#222', 0, 150]} />
+      <ambientLight ref={ambientRef} intensity={0.7} color="#ffffff" />
+      <fog attach="fog" args={['#2a2a4e', 5, 200]} />
     </>
   );
 }

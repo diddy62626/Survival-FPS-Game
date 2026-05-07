@@ -1,83 +1,96 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { useTexture } from '@react-three/drei';
+import { MuzzleFlash } from './Particles';
 
 export default function Weapon() {
   const group = useRef();
-  const muzzleFlash = useRef();
+  const muzzleRef = useRef();
   const { camera } = useThree();
   const { shoot, ads, reload, moveForward, moveBackward, moveLeft, moveRight } = useKeyboard();
   const metalTexture = useTexture('/assets/textures/metal.png');
+  const [isFiring, setIsFiring] = useState(false);
 
   const weaponState = useRef({
     reloading: false,
     lastFire: 0,
     bob: 0,
+    swayX: 0,
+    swayY: 0,
   });
 
   useFrame((state) => {
-    const { clock } = state;
+    const { clock, mouse } = state;
 
-    // Weapon follow camera with sway
+    // Weapon follow camera with smoothed sway
     group.current.position.copy(camera.position);
-    group.current.quaternion.slerp(camera.quaternion, 0.25);
+    group.current.quaternion.slerp(camera.quaternion, 0.15);
+
+    // Mouse Sway
+    weaponState.current.swayX = THREE.MathUtils.lerp(weaponState.current.swayX, mouse.x * 0.05, 0.1);
+    weaponState.current.swayY = THREE.MathUtils.lerp(weaponState.current.swayY, mouse.y * 0.05, 0.1);
 
     // ADS
-    const targetPos = ads ? new THREE.Vector3(0, -0.12, -0.2) : new THREE.Vector3(0.3, -0.3, -0.5);
+    const targetPos = ads ? new THREE.Vector3(0, -0.12, -0.1) : new THREE.Vector3(0.25, -0.25, -0.4);
     const model = group.current.children[0];
-    model.position.lerp(targetPos, 0.15);
+    model.position.lerp(targetPos, 0.2);
+    model.position.x += weaponState.current.swayX;
+    model.position.y += weaponState.current.swayY;
 
     // Walking Bob
-    const isMoving = (moveForward || moveBackward || moveLeft || moveRight) && !ads;
+    const isMoving = (moveForward || moveBackward || moveLeft || moveRight);
     if (isMoving) {
-      weaponState.current.bob += 0.12;
-      model.position.y += Math.sin(weaponState.current.bob) * 0.006;
-      model.position.x += Math.cos(weaponState.current.bob * 0.5) * 0.006;
+      const speed = ads ? 0.05 : 0.15;
+      weaponState.current.bob += speed;
+      model.position.y += Math.sin(weaponState.current.bob) * 0.005;
+      model.position.x += Math.cos(weaponState.current.bob * 0.5) * 0.005;
     }
 
-    // Shooting recoil & logic (Transient visibility for muzzle flash to avoid lag)
-    if (shoot && Date.now() - weaponState.current.lastFire > 120 && !weaponState.current.reloading) {
+    // Shooting logic
+    if (shoot && Date.now() - weaponState.current.lastFire > 100 && !weaponState.current.reloading) {
       weaponState.current.lastFire = Date.now();
-      model.position.z += 0.12;
-      model.rotation.x -= 0.15;
+      model.position.z += 0.1;
+      model.rotation.x -= 0.1;
 
-      if (muzzleFlash.current) {
-          muzzleFlash.current.visible = true;
-          muzzleFlash.current.scale.setScalar(Math.random() * 0.5 + 0.5);
-          setTimeout(() => { if(muzzleFlash.current) muzzleFlash.current.visible = false; }, 50);
-      }
+      setIsFiring(true);
+      setTimeout(() => setIsFiring(false), 50);
     }
 
-    model.position.z = THREE.MathUtils.lerp(model.position.z, targetPos.z, 0.15);
-    model.rotation.x = THREE.MathUtils.lerp(model.rotation.x, 0, 0.15);
+    model.position.z = THREE.MathUtils.lerp(model.position.z, targetPos.z, 0.2);
+    model.rotation.x = THREE.MathUtils.lerp(model.rotation.x, 0, 0.2);
 
     if (reload && !weaponState.current.reloading) {
         weaponState.current.reloading = true;
-        model.position.y -= 0.6;
+        model.rotation.z = Math.PI * 0.2;
         setTimeout(() => {
             weaponState.current.reloading = false;
-        }, 1200);
+            model.rotation.z = 0;
+        }, 1000);
     }
   });
 
   return (
     <group ref={group}>
-      <group position={[0.3, -0.3, -0.5]}>
+      <group>
+        {/* Main Body */}
         <mesh castShadow>
-          <boxGeometry args={[0.1, 0.2, 0.6]} />
-          <meshStandardMaterial map={metalTexture} color="#222" metalness={0.8} roughness={0.2} />
+          <boxGeometry args={[0.08, 0.15, 0.5]} />
+          <meshStandardMaterial map={metalTexture} color="#151515" metalness={0.9} roughness={0.1} />
         </mesh>
-        <mesh position={[0, -0.15, 0.15]} castShadow>
-          <boxGeometry args={[0.08, 0.4, 0.1]} />
+        {/* Barrel */}
+        <mesh position={[0, 0.04, -0.3]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.02, 0.02, 0.4, 8]} />
+            <meshStandardMaterial color="#050505" metalness={1} roughness={0} />
+        </mesh>
+        {/* Grip */}
+        <mesh position={[0, -0.12, 0.1]} rotation={[0.2, 0, 0]} castShadow>
+          <boxGeometry args={[0.07, 0.25, 0.1]} />
           <meshStandardMaterial map={metalTexture} color="#111" />
         </mesh>
-        {/* Muzzle Flash (Static mesh with toggled visibility) */}
-        <mesh ref={muzzleFlash} position={[0, 0.05, -0.35]} visible={false}>
-            <sphereGeometry args={[0.12, 8, 8]} />
-            <meshBasicMaterial color="#ffaa00" transparent opacity={0.8} />
-        </mesh>
+
+        {isFiring && <MuzzleFlash position={[0, 0.04, -0.5]} rotation={[-Math.PI / 2, 0, 0]} />}
       </group>
     </group>
   );
