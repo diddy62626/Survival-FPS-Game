@@ -19,7 +19,7 @@ export const Zombie = React.memo(({ id, startPos, typeSeed }) => {
       scale: 0.6 + s * 1.5,
       speed: 1.2 + (1 - s) * 2.5,
       hp: 50 + s * 200,
-      color: new THREE.Color().setHSL(s * 0.1, 0.4, 0.3), // Fleshy/Muddy tones
+      color: new THREE.Color().setHSL(s * 0.1, 0.4, 0.3),
       eyeColor: s > 0.8 ? '#ff0000' : '#00ff66',
       isGiant: s > 0.8,
       isRunner: s < 0.2,
@@ -42,6 +42,7 @@ export const Zombie = React.memo(({ id, startPos, typeSeed }) => {
     const currentPosVec = new THREE.Vector3(...pos.current);
     const dist = playerPos.distanceTo(currentPosVec);
 
+    // Optimization: only process close zombies
     if (dist > 60) return;
 
     const dir = new THREE.Vector3().subVectors(playerPos, currentPosVec).normalize();
@@ -52,7 +53,6 @@ export const Zombie = React.memo(({ id, startPos, typeSeed }) => {
     if (mesh.current) {
         mesh.current.lookAt(playerPos.x, mesh.current.position.y, playerPos.z);
 
-        // Simple arm animation
         const t = state.clock.elapsedTime * stats.speed * 2;
         if (leftArm.current) leftArm.current.rotation.x = Math.sin(t) * 0.5;
         if (rightArm.current) rightArm.current.rotation.x = Math.cos(t) * 0.5;
@@ -67,19 +67,16 @@ export const Zombie = React.memo(({ id, startPos, typeSeed }) => {
   return (
     <group ref={ref} onClick={onHit}>
       <group ref={mesh} scale={stats.scale}>
-        {/* Torso */}
         <mesh castShadow>
           <capsuleGeometry args={[0.25, 0.8, 4, 8]} />
           <meshStandardMaterial map={barkTexture} color={stats.color} roughness={0.8} />
         </mesh>
 
-        {/* Head */}
         <mesh position={[0, 0.75, 0]} castShadow>
             <sphereGeometry args={[0.22, 8, 8]} />
             <meshStandardMaterial map={barkTexture} color={stats.color.clone().multiplyScalar(0.9)} />
         </mesh>
 
-        {/* Eyes */}
         <mesh position={[-0.08, 0.8, 0.18]}>
             <sphereGeometry args={[0.04]} />
             <meshBasicMaterial color={stats.eyeColor} />
@@ -89,7 +86,6 @@ export const Zombie = React.memo(({ id, startPos, typeSeed }) => {
             <meshBasicMaterial color={stats.eyeColor} />
         </mesh>
 
-        {/* Arms */}
         <group ref={leftArm} position={[-0.35, 0.4, 0]}>
             <mesh castShadow position={[0, -0.2, 0]}>
                 <boxGeometry args={[0.12, 0.5, 0.12]} />
@@ -103,7 +99,6 @@ export const Zombie = React.memo(({ id, startPos, typeSeed }) => {
             </mesh>
         </group>
 
-        {/* Mutations/Details */}
         {stats.isGiant && (
             <mesh position={[0, 0.3, -0.2]} castShadow>
                 <boxGeometry args={[0.5, 0.5, 0.4]} />
@@ -118,11 +113,20 @@ export const Zombie = React.memo(({ id, startPos, typeSeed }) => {
 
 export default function ZombieManager() {
     const zombies = useMemo(() => {
-        return Array.from({ length: 40 }).map((_, i) => ({
-            id: i,
-            startPos: [Math.random() * 150 - 75, 5, Math.random() * 150 - 75],
-            typeSeed: Math.floor(Math.random() * 101)
-        }));
+        return Array.from({ length: 40 }).map((_, i) => {
+            // Safety: Zombies spawn at least 20 units away from center
+            let x, z;
+            do {
+                x = Math.random() * 200 - 100;
+                z = Math.random() * 200 - 100;
+            } while (Math.sqrt(x*x + z*z) < 20);
+
+            return {
+                id: i,
+                startPos: [x, 20, z], // Higher spawn to drop in
+                typeSeed: Math.floor(Math.random() * 101)
+            };
+        });
     }, []);
 
     return (

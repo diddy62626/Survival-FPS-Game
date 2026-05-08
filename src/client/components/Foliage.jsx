@@ -22,6 +22,10 @@ export function Foliage({ chunkX, chunkZ, seed }) {
             const x = (Math.random() - 0.5) * 32 + chunkX;
             const z = (Math.random() - 0.5) * 32 + chunkZ;
 
+            // Safety: Don't spawn trees near the world center (spawn area)
+            const distFromCenter = Math.sqrt(x*x + z*z);
+            if (distFromCenter < 10) continue;
+
             const roadFactor = Math.exp(-Math.pow(x * 0.2, 2));
             if (roadFactor < 0.15) {
                 const h = (noise(x * 0.05, z * 0.05) * 10);
@@ -40,7 +44,7 @@ export function Foliage({ chunkX, chunkZ, seed }) {
                 dummy.updateMatrix();
                 leafMatrices.push(dummy.matrix.clone());
 
-                // Foliage Clump 2 (slightly offset)
+                // Foliage Clump 2
                 dummy.position.set(x + scale * 0.5, h + (3.5 * scale), z - scale * 0.3);
                 dummy.scale.setScalar(scale * 1.2);
                 dummy.updateMatrix();

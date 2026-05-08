@@ -10,10 +10,17 @@ export default function Player({ socketRef }) {
   const { camera } = useThree();
   const { moveForward, moveBackward, moveLeft, moveRight, jump, shoot } = useKeyboard();
 
+  // Randomized spawn within a small radius at a safe height
+  const initialPos = [
+    (Math.random() - 0.5) * 5,
+    10,
+    (Math.random() - 0.5) * 5
+  ];
+
   const [ref, api] = useSphere(() => ({
     mass: 1,
     type: 'Dynamic',
-    position: [0, 10, 0],
+    position: initialPos,
     args: [0.6],
     fixedRotation: true,
   }));
@@ -29,7 +36,14 @@ export default function Player({ socketRef }) {
   const flashlightRef = useRef();
 
   useFrame((state, delta) => {
+    // Camera follows player
     camera.position.set(pos.current[0], pos.current[1] + 0.8, pos.current[2]);
+
+    // Respawn if fell off the world
+    if (pos.current[1] < -50) {
+        api.position.set(0, 20, 0);
+        api.velocity.set(0, 0, 0);
+    }
 
     if (shakeValue > 0) {
         camera.position.x += (Math.random() - 0.5) * shakeValue;

@@ -6,12 +6,12 @@ import { useGameStore } from '../store/useGameStore';
 
 export default function Atmosphere() {
   const sunRef = useRef();
-  const ambientRef = useRef();
   const setTime = useGameStore((state) => state.setTime);
 
+  // Set a brighter time of day (around 0.2 is morning/daylight)
+  const time = 0.2;
+
   useFrame((state) => {
-    // 0.48 is a nice late afternoon/sunset where things are still visible
-    const time = 0.48;
     setTime(time);
 
     const angle = time * Math.PI * 2;
@@ -21,20 +21,22 @@ export default function Atmosphere() {
 
     if (sunRef.current) {
       sunRef.current.position.set(sunX, sunY, sunZ);
-      sunRef.current.intensity = 2.0;
+      sunRef.current.intensity = 3.0;
     }
   });
+
+  const sunPos = [Math.cos(time * Math.PI * 2) * 200, Math.sin(time * Math.PI * 2) * 200, 50];
 
   return (
     <>
       <Sky
-        sunPosition={[100, 10, 50]}
-        turbidity={8}
-        rayleigh={6}
+        sunPosition={sunPos}
+        turbidity={5}
+        rayleigh={2}
         mieCoefficient={0.005}
         mieDirectionalG={0.8}
       />
-      <Stars radius={300} depth={60} count={10000} factor={4} saturation={0} fade speed={1} />
+      <Stars radius={300} depth={60} count={1000} factor={4} saturation={0} fade speed={1} />
       <directionalLight
         ref={sunRef}
         castShadow
@@ -44,8 +46,8 @@ export default function Atmosphere() {
         shadow-camera-top={100}
         shadow-camera-bottom={-100}
       />
-      <ambientLight ref={ambientRef} intensity={0.7} color="#ffffff" />
-      <fog attach="fog" args={['#2a2a4e', 5, 200]} />
+      <ambientLight intensity={0.8} color="#ffffff" />
+      <fog attach="fog" args={['#87ceeb', 10, 300]} />
     </>
   );
 }

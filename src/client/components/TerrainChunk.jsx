@@ -1,11 +1,11 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { useHeightfield } from '@react-three/cannon';
+import { useHeightfield, useBox } from '@react-three/cannon';
 import { useTexture } from '@react-three/drei';
 import { createNoise } from '../utils/noise';
 
 const CHUNK_SIZE = 32;
-const RESOLUTION = 32;
+const RESOLUTION = 64;
 
 export const TerrainChunk = React.memo(({ x, z, seed }) => {
   const noise = useMemo(() => createNoise(seed), [seed]);
@@ -16,7 +16,7 @@ export const TerrainChunk = React.memo(({ x, z, seed }) => {
         map: texture,
         roughness: 0.9,
         metalness: 0.1,
-        color: '#666'
+        color: '#888'
     });
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(8, 8);
@@ -41,6 +41,7 @@ export const TerrainChunk = React.memo(({ x, z, seed }) => {
         const h = (noise(gx * 0.05, gz * 0.05) * 8) +
                   (noise(gx * 0.1, gz * 0.1) * 2);
 
+        // Road at center X
         const roadFactor = Math.exp(-Math.pow(gx * 0.15, 2));
         const finalH = h * (1 - roadFactor);
 
@@ -48,9 +49,8 @@ export const TerrainChunk = React.memo(({ x, z, seed }) => {
         vertices[(i * (RESOLUTION + 1) + j) * 3 + 1] = finalH;
         vertices[(i * (RESOLUTION + 1) + j) * 3 + 2] = lz;
 
-        // Color variation based on height and road
-        const c = new THREE.Color(roadFactor > 0.5 ? '#333' : '#4a4a4a');
-        if (finalH > 5) c.lerp(new THREE.Color('#888'), 0.5);
+        const c = new THREE.Color(roadFactor > 0.5 ? '#666' : '#5a5a5a');
+        if (finalH > 5) c.lerp(new THREE.Color('#aaa'), 0.3);
 
         colors[(i * (RESOLUTION + 1) + j) * 3] = c.r;
         colors[(i * (RESOLUTION + 1) + j) * 3 + 1] = c.g;
@@ -88,27 +88,47 @@ export const TerrainChunk = React.memo(({ x, z, seed }) => {
   }, [vertices]);
 
   return (
-    <mesh ref={ref} receiveShadow material={material} vertexColors>
-      <bufferGeometry ref={geomRef}>
-        <bufferAttribute
-          attach="attributes-position"
-          count={vertices.length / 3}
-          array={vertices}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          count={colors.length / 3}
-          array={colors}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="index"
-          count={indices.length}
-          array={indices}
-          itemSize={1}
-        />
-      </bufferGeometry>
-    </mesh>
+    <group>
+      {x === 0 && z === 0 && <SpawnPlatform />}
+
+      <mesh ref={ref} receiveShadow material={material} vertexColors>
+        <bufferGeometry ref={geomRef}>
+          <bufferAttribute
+            attach="attributes-position"
+            count={vertices.length / 3}
+            array={vertices}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="attributes-color"
+            count={colors.length / 3}
+            array={colors}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="index"
+            count={indices.length}
+            array={indices}
+            itemSize={1}
+          />
+        </bufferGeometry>
+      </mesh>
+    </group>
   );
 });
+
+function SpawnPlatform() {
+    const concrete = useTexture('/assets/textures/concrete.png');
+    const [ref] = useBox(() => ({
+        args: [8, 1, 8],
+        position: [0, 0.5, 0],
+        type: 'Static'
+    }));
+
+    return (
+        <mesh ref={ref} receiveShadow>
+            <boxGeometry args={[8, 1, 8]} />
+            <meshStandardMaterial map={concrete} color="#444" metalness={0.1} roughness={0.9} />
+        </mesh>
+    );
+}
