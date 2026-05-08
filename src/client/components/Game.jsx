@@ -2,7 +2,6 @@ import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PointerLockControls, Stats, Environment } from '@react-three/drei';
 import { Physics } from '@react-three/cannon';
-import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
 import World from './World';
 import Player from './Player';
 import OtherPlayers from './OtherPlayers';
@@ -31,13 +30,6 @@ export default function Game() {
                 <OtherPlayers />
                 <ZombieManager />
               </Physics>
-
-              <EffectComposer disableNormalPass>
-                <Bloom luminanceThreshold={1} luminanceSmoothing={0.9} height={300} />
-                <Noise opacity={0.05} />
-                <Vignette eskil={false} offset={0.1} darkness={1.1} />
-              </EffectComposer>
-
               <PointerLockControls />
             </Suspense>
           </Canvas>
